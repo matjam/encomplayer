@@ -50,6 +50,10 @@ The defaults match rmpc. Press `?` for the full list.
 The Playlists tab starts with **ALL MUSIC**, so `6` `X` also shuffles
 everything, and `C-s s` on it saves the library as a playlist.
 
+The queue, current track and play position survive a restart. After
+relaunching, `p` resumes the track where it stopped; choosing a track with
+`Enter` starts it from the beginning, and `s` clears the saved position.
+
 ## Mouse
 
 | Where | Click | Double-click | Wheel |

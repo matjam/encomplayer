@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/matjam/encomplayer/internal/audio"
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/domain"
@@ -20,6 +21,10 @@ const (
 	tickInterval = 100 * time.Millisecond
 	chordTimeout = time.Second
 	spectrumBars = 64
+
+	// positionSaveEvery bounds how much listening a crash can lose from
+	// the saved resume position.
+	positionSaveEvery = 5 * time.Second
 )
 
 // Fixed layout rows outside the tab body. The signal strip's height is
@@ -45,6 +50,11 @@ type Model struct {
 	modes     domain.Modes
 	playGen   uint64
 	restored  bool
+
+	// resumeAt is where the current track stopped in the last session.
+	// Resuming from a stop starts there; playing any track clears it.
+	resumeAt  time.Duration
+	lastSaved time.Time
 
 	tabs   []tab
 	active int
@@ -142,6 +152,12 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 
 	case tickMsg:
 		m.position, m.length = m.deps.Player.Progress()
+		if t, _, ok := m.queue.Current(); ok && m.resumeAt > 0 && m.deps.Player.State() == audio.Stopped {
+			m.position, m.length = m.resumeAt, t.Duration
+		}
+		if m.deps.Player.State() == audio.Playing && time.Since(m.lastSaved) >= positionSaveEvery {
+			m.saveState()
+		}
 		m.spectrum = smooth(m.spectrum, m.deps.Player.Spectrum(spectrumBars))
 		m.status.expire()
 		return tick()
@@ -221,16 +237,29 @@ func (m *Model) syncQueue() {
 func (m *Model) saveState() {
 	paths := collection.Map(m.queue.Items(), func(t domain.Track) string { return t.Path })
 	st := config.State{
-		Queue:   paths,
-		Current: m.queue.CurrentIndex(),
-		Modes:   m.modes,
-		Volume:  m.deps.Player.Volume(),
-		Tab:     m.tabs[m.active].title(),
-		Layout:  m.sizes,
+		Queue:           paths,
+		Current:         m.queue.CurrentIndex(),
+		Modes:           m.modes,
+		Volume:          m.deps.Player.Volume(),
+		Tab:             m.tabs[m.active].title(),
+		Layout:          m.sizes,
+		PositionSeconds: m.resumePosition().Seconds(),
 	}
+	m.lastSaved = time.Now()
 	if err := config.SaveState(m.deps.StatePath, st); err != nil {
 		m.status.errorf("STATE NOT SAVED: %v", err)
 	}
+}
+
+// resumePosition is where the next launch should resume the current track:
+// the live position while a track is loaded, otherwise the position carried
+// over from the last session.
+func (m *Model) resumePosition() time.Duration {
+	if m.deps.Player.State() != audio.Stopped {
+		pos, _ := m.deps.Player.Progress()
+		return pos
+	}
+	return m.resumeAt
 }
 
 func (m *Model) switchTo(name string) {

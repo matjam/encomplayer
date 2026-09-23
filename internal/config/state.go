@@ -17,6 +17,10 @@ type State struct {
 	Volume  int          `json:"volume"`
 	Tab     string       `json:"tab"`
 	Layout  Layout       `json:"layout"`
+
+	// PositionSeconds is how far into the current track playback had got,
+	// so the next launch can resume there.
+	PositionSeconds float64 `json:"position_seconds"`
 }
 
 // Layout holds the pane sizes the user set by dragging dividers.

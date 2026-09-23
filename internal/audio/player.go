@@ -75,14 +75,23 @@ func NewPlayer(decoders *Decoders, volume int) (*Player, error) {
 // Ended delivers the generation of each track that played to the end.
 func (p *Player) Ended() <-chan uint64 { return p.ended }
 
-// Play stops the current track and starts path. It returns the generation
-// that identifies this playback in Ended.
-func (p *Player) Play(ctx context.Context, path string) (uint64, error) {
+// Play stops the current track and starts path at offset start. It returns
+// the generation that identifies this playback in Ended.
+func (p *Player) Play(ctx context.Context, path string, start time.Duration) (uint64, error) {
 	p.cache.keep(path)
 	stream, format, err := Open(ctx, p.decoders, p.source(path))
 	if err != nil {
 		p.cache.keep()
 		return 0, err
+	}
+
+	// Seek before the stream reaches the speaker, so a resumed track never
+	// plays its opening first. A position past the end starts from the top.
+	if pos := format.SampleRate.N(start); pos > 0 && pos < stream.Len() {
+		if err := stream.Seek(pos); err != nil {
+			stream.Close()
+			return 0, fmt.Errorf("resume %s at %v: %w", path, start, err)
+		}
 	}
 
 	p.mu.Lock()

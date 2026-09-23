@@ -76,7 +76,8 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 		return m.togglePause()
 	case keymap.Stop:
 		p.Stop()
-		m.playGen = 0
+		m.playGen, m.resumeAt = 0, 0
+		m.saveState()
 	case keymap.NextTrack:
 		return m.advance(false)
 	case keymap.PreviousTrack:

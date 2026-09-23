@@ -23,6 +23,8 @@ import (
 type fakePlayer struct {
 	Player
 	played    []string
+	starts    []time.Duration
+	pos       time.Duration
 	preloaded []string
 	seeks     []time.Duration
 	state     audio.State
@@ -30,9 +32,11 @@ type fakePlayer struct {
 	ended     chan uint64
 }
 
-func (f *fakePlayer) Play(_ context.Context, path string) (uint64, error) {
+func (f *fakePlayer) Play(_ context.Context, path string, start time.Duration) (uint64, error) {
 	f.played = append(f.played, path)
+	f.starts = append(f.starts, start)
 	f.state = audio.Playing
+	f.pos = start
 	return uint64(len(f.played)), nil
 }
 func (f *fakePlayer) Preload(path string) { f.preloaded = append(f.preloaded, path) }
@@ -43,7 +47,10 @@ func (f *fakePlayer) Seek(d time.Duration) error {
 	return nil
 }
 func (f *fakePlayer) Progress() (time.Duration, time.Duration) {
-	return 30 * time.Second, 3 * time.Minute
+	if f.state == audio.Stopped {
+		return 0, 0
+	}
+	return f.pos, 3 * time.Minute
 }
 func (f *fakePlayer) SetVolume(v int)          { f.volume = max(0, min(v, 100)) }
 func (f *fakePlayer) Volume() int              { return f.volume }
@@ -65,16 +72,22 @@ func testTracks(root string) []domain.Track {
 
 func newTestModel(t *testing.T) (*Model, *fakePlayer) {
 	t.Helper()
-	dir := t.TempDir()
+	return newTestModelAt(t, filepath.Join(t.TempDir(), "state.json"))
+}
+
+// newTestModelAt starts a model from the session state saved at statePath,
+// the way a relaunch does.
+func newTestModelAt(t *testing.T, statePath string) (*Model, *fakePlayer) {
+	t.Helper()
 	fp := &fakePlayer{volume: 70, ended: make(chan uint64)}
 	m := New(context.Background(), Deps{
 		Player:      fp,
-		Playlists:   playlist.NewStore(filepath.Join(dir, "playlists")),
+		Playlists:   playlist.NewStore(filepath.Join(filepath.Dir(statePath), "playlists")),
 		Keymap:      keymap.Default(),
 		ArtProtocol: "off",
 		Config:      config.Default(),
-		State:       config.DefaultState(),
-		StatePath:   filepath.Join(dir, "state.json"),
+		State:       config.LoadState(statePath),
+		StatePath:   statePath,
 		Version:     "test",
 	})
 	m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})

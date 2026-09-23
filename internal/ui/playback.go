@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -18,15 +19,21 @@ func (m *Model) playIndex(i int) tea.Cmd {
 	return m.startCurrent()
 }
 
-// startCurrent plays the current queue item, or stops when there is none.
-func (m *Model) startCurrent() tea.Cmd {
+// startCurrent plays the current queue item from the beginning, or stops
+// when there is none.
+func (m *Model) startCurrent() tea.Cmd { return m.startCurrentAt(0) }
+
+// startCurrentAt plays the current queue item from offset start. Any saved
+// resume position is used up either way.
+func (m *Model) startCurrentAt(start time.Duration) tea.Cmd {
+	m.resumeAt = 0
 	t, _, ok := m.queue.Current()
 	if !ok {
 		m.deps.Player.Stop()
 		m.playGen = 0
 		return m.showArt(nil)
 	}
-	gen, err := m.deps.Player.Play(m.ctx, t.Path)
+	gen, err := m.deps.Player.Play(m.ctx, t.Path, start)
 	if err != nil {
 		m.playGen = 0
 		m.status.errorf("CANNOT PLAY %s: %v", t.DisplayTitle(), err)
@@ -34,6 +41,10 @@ func (m *Model) startCurrent() tea.Cmd {
 	}
 	m.playGen = gen
 	m.preloadNext()
+
+	// Save now so the stored position belongs to the new track, not the
+	// one the player was on a moment ago.
+	m.saveState()
 	return m.showArt(&t)
 }
 
@@ -69,15 +80,16 @@ func (m *Model) retreat() tea.Cmd {
 	return m.startCurrent()
 }
 
-// togglePause pauses or resumes. From a stop it plays the current track, or
-// the one under the queue cursor.
+// togglePause pauses or resumes. From a stop it plays the current track,
+// resuming where the last session left off, or the one under the queue
+// cursor.
 func (m *Model) togglePause() tea.Cmd {
 	if m.deps.Player.State() != audio.Stopped {
 		m.deps.Player.TogglePause()
 		return nil
 	}
-	if _, i, ok := m.queue.Current(); ok {
-		return m.playIndex(i)
+	if _, _, ok := m.queue.Current(); ok {
+		return m.startCurrentAt(m.resumeAt)
 	}
 	if m.queue.Len() > 0 {
 		return m.playIndex(m.queueList.Cursor())
@@ -188,7 +200,9 @@ func (m *Model) restoreQueue() {
 		}
 	}
 	m.queue = domain.NewQueue(tracks...)
-	m.queue.SetCurrent(current)
+	if m.queue.SetCurrent(current) {
+		m.resumeAt = time.Duration(m.deps.State.PositionSeconds * float64(time.Second))
+	}
 	m.queueList.SetItems(m.queue.Items())
 	if _, i, ok := m.queue.Current(); ok {
 		m.queueList.SetCursor(i)
