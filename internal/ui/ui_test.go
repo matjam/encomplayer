@@ -22,10 +22,11 @@ import (
 // never reach.
 type fakePlayer struct {
 	Player
-	played []string
-	state  audio.State
-	volume int
-	ended  chan uint64
+	played    []string
+	preloaded []string
+	state     audio.State
+	volume    int
+	ended     chan uint64
 }
 
 func (f *fakePlayer) Play(_ context.Context, path string) (uint64, error) {
@@ -33,6 +34,7 @@ func (f *fakePlayer) Play(_ context.Context, path string) (uint64, error) {
 	f.state = audio.Playing
 	return uint64(len(f.played)), nil
 }
+func (f *fakePlayer) Preload(path string)      { f.preloaded = append(f.preloaded, path) }
 func (f *fakePlayer) Stop()                    { f.state = audio.Stopped }
 func (f *fakePlayer) TogglePause()             {}
 func (f *fakePlayer) Seek(time.Duration) error { return nil }
@@ -232,6 +234,24 @@ func TestTrackEndAdvancesWithConsume(t *testing.T) {
 	m.Update(endedMsg(stale))
 	if len(fp.played) != 2 {
 		t.Errorf("stale end event advanced playback")
+	}
+}
+
+func TestPreloadsWhatPlaysNext(t *testing.T) {
+	m, fp := newTestModel(t)
+	m.enqueue(testTracks("/music"))
+	m.playIndex(0)
+
+	last := func() string { return fp.preloaded[len(fp.preloaded)-1] }
+	if len(fp.preloaded) == 0 || !strings.HasSuffix(last(), "02.mp3") {
+		t.Fatalf("preloaded %v, want 02.mp3 next", fp.preloaded)
+	}
+
+	press(m, "x") // random on: the promised pick must be what plays next
+	promised := last()
+	m.Update(endedMsg(m.playGen))
+	if got := fp.played[len(fp.played)-1]; got != promised {
+		t.Errorf("played %s after preloading %s", got, promised)
 	}
 }
 

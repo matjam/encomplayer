@@ -9,11 +9,15 @@ import (
 type Queue[T any] struct {
 	items   []T
 	current int
+
+	// planned is the random pick PeekNext promised, so the track the
+	// player preloads is the one Advance plays. -1 when unset.
+	planned int
 }
 
 // NewQueue returns a queue holding items with nothing current.
 func NewQueue[T any](items ...T) *Queue[T] {
-	return &Queue[T]{items: slices.Clone(items), current: -1}
+	return &Queue[T]{items: slices.Clone(items), current: -1, planned: -1}
 }
 
 // Len returns the number of items.
@@ -45,6 +49,7 @@ func (q *Queue[T]) CurrentIndex() int { return q.current }
 
 // SetCurrent marks index i as current. An out-of-range index clears it.
 func (q *Queue[T]) SetCurrent(i int) bool {
+	q.planned = -1
 	if i < 0 || i >= len(q.items) {
 		q.current = -1
 		return false
@@ -64,6 +69,7 @@ func (q *Queue[T]) Remove(i int) {
 		return
 	}
 	q.items = slices.Delete(q.items, i, i+1)
+	q.planned = -1
 	switch {
 	case i == q.current:
 		q.current = -1
@@ -75,7 +81,7 @@ func (q *Queue[T]) Remove(i int) {
 // Clear empties the queue.
 func (q *Queue[T]) Clear() {
 	q.items = nil
-	q.current = -1
+	q.current, q.planned = -1, -1
 }
 
 // Swap exchanges the items at i and j and keeps the current marker on the
@@ -85,6 +91,7 @@ func (q *Queue[T]) Swap(i, j int) bool {
 		return false
 	}
 	q.items[i], q.items[j] = q.items[j], q.items[i]
+	q.planned = -1
 	switch q.current {
 	case i:
 		q.current = j
@@ -106,7 +113,18 @@ func (q *Queue[T]) Shuffle(r *rand.Rand) {
 		}
 	}
 	q.items = shuffled
-	q.current = current
+	q.current, q.planned = current, -1
+}
+
+// PeekNext returns the item Advance would play when the current one ends on
+// its own, without moving. In random mode the pick is remembered, so Advance
+// plays the same item unless the queue changes first.
+func (q *Queue[T]) PeekNext(m Modes, r *rand.Rand) (T, bool) {
+	i := q.nextIndex(m, true, r)
+	if m.Random && i >= 0 {
+		q.planned = i
+	}
+	return q.At(i)
 }
 
 // Advance moves to the next item under the given modes and returns it. auto
@@ -143,7 +161,7 @@ func (q *Queue[T]) Retreat(m Modes) (T, bool) {
 			prev = len(q.items) - 1
 		}
 	}
-	q.current = prev
+	q.current, q.planned = prev, -1
 	return q.items[prev], true
 }
 
@@ -169,6 +187,9 @@ func (q *Queue[T]) nextIndex(m Modes, auto bool, r *rand.Rand) int {
 
 func (q *Queue[T]) randomIndex(r *rand.Rand) int {
 	n := len(q.items)
+	if q.planned >= 0 && q.planned < n && (q.planned != q.current || n == 1) {
+		return q.planned
+	}
 	if n == 1 || q.current < 0 {
 		return r.IntN(n)
 	}

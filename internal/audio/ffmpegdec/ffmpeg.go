@@ -60,8 +60,12 @@ func Register(r *audio.Decoders, d *Decoder) {
 	r.Register("ffmpeg", d, Extensions...)
 }
 
+// ReadsPath implements audio.PathReader: ffmpeg opens the file itself.
+func (d *Decoder) ReadsPath() {}
+
 // Decode implements audio.Decoder.
-func (d *Decoder) Decode(ctx context.Context, path string) (beep.StreamSeekCloser, beep.Format, error) {
+func (d *Decoder) Decode(ctx context.Context, src audio.Source) (beep.StreamSeekCloser, beep.Format, error) {
+	path := src.Path
 	length, err := d.probe(ctx, path)
 	if err != nil {
 		return nil, beep.Format{}, err
