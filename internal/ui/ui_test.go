@@ -16,6 +16,7 @@ import (
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/playlist"
+	"github.com/matjam/encomplayer/internal/theme"
 )
 
 // fakePlayer records calls. The embedded interface covers methods the tests
@@ -87,8 +88,13 @@ func newTestModelAt(t *testing.T, statePath string) (*Model, *fakePlayer) {
 		ArtProtocol: "off",
 		Config:      config.Default(),
 		State:       config.LoadState(statePath),
-		StatePath:   statePath,
-		Version:     "test",
+		Paths: config.Paths{
+			State:  statePath,
+			Config: filepath.Join(filepath.Dir(statePath), "config.json"),
+			Themes: filepath.Join(filepath.Dir(statePath), "themes"),
+		},
+		Themes:  theme.NewStore(filepath.Join(filepath.Dir(statePath), "themes")),
+		Version: "test",
 	})
 	m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m.boot.skip()
@@ -176,6 +182,8 @@ func keyMsg(k string) tea.KeyPressMsg {
 		return tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 	case "tab":
 		return tea.KeyPressMsg{Code: tea.KeyTab}
+	case "backspace":
+		return tea.KeyPressMsg{Code: tea.KeyBackspace}
 	}
 	if rest, ok := strings.CutPrefix(k, "ctrl+"); ok {
 		return tea.KeyPressMsg{Code: []rune(rest)[0], Mod: tea.ModCtrl}

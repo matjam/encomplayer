@@ -103,4 +103,5 @@ const (
 	// EncomPlayer additions, not in rmpc.
 	ShuffleAll  = "ShuffleAll"
 	ShufflePlay = "ShufflePlay"
+	ShowConfig  = "ShowConfig"
 )

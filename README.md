@@ -72,12 +72,18 @@ between browser columns. Sizes are remembered between sessions.
 
 ## Configuration
 
-`~/.config/encomplayer/config.json` (or `$XDG_CONFIG_HOME`):
+Press `oc` (or `:config`) for the config screen. Its tabs cover General,
+Appearance, Mouse, Keys and Paths; `h`/`l` switch tabs, `j`/`k` pick a
+setting and `Enter` edits it. Changes apply immediately and are saved.
+
+The settings live in `~/.config/encomplayer/config.json` (or
+`$XDG_CONFIG_HOME`), which you can also edit by hand:
 
 ```json
 {
   "music_dir": "~/Music",
   "album_art": "auto",
+  "theme": "catppuccin-mocha",
   "volume_step": 5,
   "seek_seconds": 5,
   "rescan_seconds": 0,
@@ -95,6 +101,40 @@ network mounts. A negative value disables periodic rescans.
 
 Playlists live in `~/.config/encomplayer/playlists`, the library cache in
 `~/.cache/encomplayer`, and the saved queue in `~/.local/state/encomplayer`.
+
+After editing the file, send `SIGUSR1` (`pkill -USR1 encomplayer`) or run
+`:reload` to apply it without restarting.
+
+## Themes
+
+Built in: `encom` (default), `catppuccin-latte`, `-frappe`, `-macchiato`,
+`-mocha`, `gruvbox-dark`, `-light`, `tokyonight-night`, `-storm`, `-day`,
+`rose-pine`, `-moon`, `-dawn`, `solarized-dark`, `-light`, `kanagawa-wave`,
+`-dragon`, `everforest-dark`, `-light`, `ayu-dark`, `-mirage`,
+`github-dark`, `-light`, `dracula`, `nord`, `one-dark`, `monokai`,
+`nightfox`, `material`, `palenight`, `synthwave-84`, `night-owl`,
+`oxocarbon` and `cyberpunk`.
+
+Pick one in the config screen, where moving through the list previews each
+theme, or with `:theme <name>`.
+
+A custom theme is a JSON file in `~/.config/encomplayer/themes/`, named for
+the theme. It extends a built-in and overrides any of the colour roles:
+
+```json
+{
+  "extends": "catppuccin-mocha",
+  "colors": {
+    "accent": "#f5c2e7",
+    "background": ""
+  }
+}
+```
+
+Roles: `background` (empty keeps the terminal's), `text`, `bright`, `dim`,
+`grid`, `border`, `accent`, `error`, `selection`, `selection_text`. Save the
+file and send `SIGUSR1` to see the change live. A custom file with a
+built-in's name replaces that built-in.
 
 ## Library cache
 

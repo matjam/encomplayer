@@ -34,7 +34,7 @@ func totalDuration(tracks []domain.Track) time.Duration {
 func stripStyles(s string) string { return ansi.Strip(s) }
 
 // trackDetails renders a key/value summary of t.
-func trackDetails(t domain.Track, w int) []string {
+func (st *styles) trackDetails(t domain.Track, w int) []string {
 	rows := [][2]string{
 		{"TITLE", t.DisplayTitle()},
 		{"ARTIST", t.DisplayArtist()},
@@ -53,7 +53,7 @@ func trackDetails(t domain.Track, w int) []string {
 	const keyW = 13
 	out := make([]string, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, stDim.Render(fit(r[0], keyW))+stText.Render(fit(r[1], max(1, w-keyW))))
+		out = append(out, st.dim.Render(fit(r[0], keyW))+st.text.Render(fit(r[1], max(1, w-keyW))))
 	}
 	return out
 }

@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/matjam/encomplayer/internal/fsutil"
 )
 
 // Config is the user's settings file, config.json in the config directory.
@@ -17,6 +19,9 @@ type Config struct {
 
 	// AlbumArt selects the image protocol: auto, kitty, iterm, blocks or off.
 	AlbumArt string `json:"album_art"`
+
+	// Theme names a built-in theme or a custom one in the themes directory.
+	Theme string `json:"theme"`
 
 	// VolumeStep is the percentage VolumeUp and VolumeDown change.
 	VolumeStep int `json:"volume_step"`
@@ -45,6 +50,7 @@ type Config struct {
 func Default() Config {
 	return Config{
 		AlbumArt:     "auto",
+		Theme:        "encom",
 		VolumeStep:   5,
 		SeekSeconds:  5,
 		EnableMouse:  true,
@@ -58,6 +64,7 @@ type Paths struct {
 	State     string
 	Cache     string
 	Playlists string
+	Themes    string
 }
 
 // DefaultPaths follows the XDG base directory spec, falling back to
@@ -74,6 +81,7 @@ func DefaultPaths() (Paths, error) {
 	return Paths{
 		Config:    filepath.Join(configDir, "encomplayer", "config.json"),
 		Playlists: filepath.Join(configDir, "encomplayer", "playlists"),
+		Themes:    filepath.Join(configDir, "encomplayer", "themes"),
 		State:     filepath.Join(stateDir, "encomplayer", "state.json"),
 		Cache:     filepath.Join(cacheDir, "encomplayer", "library.json"),
 	}, nil
@@ -94,6 +102,19 @@ func Load(path string) (Config, error) {
 		return cfg, fmt.Errorf("parse config %s: %w", path, err)
 	}
 	return cfg, nil
+}
+
+// Save writes cfg to path atomically, indented so it stays easy to edit by
+// hand.
+func Save(path string, cfg Config) error {
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode config: %w", err)
+	}
+	if err := fsutil.WriteFileAtomic(path, append(data, '\n')); err != nil {
+		return fmt.Errorf("save config: %w", err)
+	}
+	return nil
 }
 
 func envOr(key, fallback string) string {

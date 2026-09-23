@@ -33,6 +33,24 @@ func Default() *Keymap {
 	return k
 }
 
+// WithOverrides returns the defaults with binds applied on top, as in the
+// config file's keybinds section: context → notation → action.
+func WithOverrides(binds map[string]map[string]string) (*Keymap, error) {
+	k := Default()
+	var errs []error
+	for ctx, b := range binds {
+		errs = append(errs, k.BindAll(Context(ctx), b))
+	}
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+	return k, nil
+}
+
+// Contexts lists the binding contexts in the order the help screen shows
+// them.
+var Contexts = []Context{Global, Navigation, Queue}
+
 // Bind maps a key sequence in rmpc notation to an action in ctx.
 func (k *Keymap) Bind(ctx Context, notation string, action Action) error {
 	seq, err := Parse(notation)

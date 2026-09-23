@@ -176,6 +176,7 @@ func (a *artState) release() string {
 
 // artBody fills the queue tab's visual panel.
 func (m *Model) artBody(w, h int) []string {
+	st := m.st
 	cols, rows, _, _ := m.artBox()
 	pad := strings.Repeat(" ", max(0, (w-cols)/2))
 	out := []string{""}
@@ -190,7 +191,7 @@ func (m *Model) artBody(w, h int) []string {
 		if m.art.loading {
 			label = "DECODING…"
 		}
-		for _, line := range gridPlaceholder(cols, rows, label) {
+		for _, line := range st.gridPlaceholder(cols, rows, label) {
 			out = append(out, pad+line)
 		}
 	}
@@ -198,12 +199,12 @@ func (m *Model) artBody(w, h int) []string {
 	out = append(out, "")
 	if t, _, ok := m.queue.Current(); ok {
 		out = append(out,
-			" "+stBright.Render(fit(t.DisplayTitle(), w-2)),
-			" "+stText.Render(fit(t.DisplayArtist(), w-2)),
-			" "+stDim.Render(fit(albumLine(t), w-2)),
+			" "+st.bright.Render(fit(t.DisplayTitle(), w-2)),
+			" "+st.text.Render(fit(t.DisplayArtist(), w-2)),
+			" "+st.dim.Render(fit(albumLine(t), w-2)),
 		)
 	} else {
-		out = append(out, " "+stDim.Render("STANDING BY"))
+		out = append(out, " "+st.dim.Render("STANDING BY"))
 	}
 	return out[:min(len(out), h)]
 }
@@ -216,7 +217,7 @@ func albumLine(t domain.Track) string {
 }
 
 // gridPlaceholder draws a TRON grid with a centred label.
-func gridPlaceholder(cols, rows int, label string) []string {
+func (st *styles) gridPlaceholder(cols, rows int, label string) []string {
 	lines := make([]string, rows)
 	for r := range rows {
 		var b strings.Builder
@@ -232,13 +233,13 @@ func gridPlaceholder(cols, rows int, label string) []string {
 				b.WriteString(" ")
 			}
 		}
-		lines[r] = stGrid.Render(b.String())
+		lines[r] = st.grid.Render(b.String())
 	}
 	if mid := rows / 2; mid < rows && len(label)+4 <= cols {
 		tag := " " + label + " "
 		left := (cols - len([]rune(tag))) / 2
 		row := []rune(stripStyles(lines[mid]))
-		lines[mid] = stGrid.Render(string(row[:left])) + stAccent.Render(tag) + stGrid.Render(string(row[left+len([]rune(tag)):]))
+		lines[mid] = st.grid.Render(string(row[:left])) + st.accent.Render(tag) + st.grid.Render(string(row[left+len([]rune(tag)):]))
 	}
 	return lines
 }

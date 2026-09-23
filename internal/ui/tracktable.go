@@ -33,18 +33,18 @@ func trackColumns(w int) []column {
 
 // trackTable renders a list of tracks with a column header. playing marks
 // the row that is currently playing.
-func trackTable(l *collection.List[domain.Track], w int, playing func(int, domain.Track) bool, empty string) []string {
+func (st *styles) trackTable(l *collection.List[domain.Track], w int, playing func(int, domain.Track) bool, empty string) []string {
 	cols := trackColumns(w)
 	header := make([]string, len(cols))
 	for i, c := range cols {
 		header[i] = fit(c.title, c.width)
 	}
 	out := []string{
-		stDim.Render(strings.Join(header, " ")),
-		stGrid.Render(strings.Repeat("─", w)),
+		st.dim.Render(strings.Join(header, " ")),
+		st.grid.Render(strings.Repeat("─", w)),
 	}
 	if l.Len() == 0 {
-		return append(out, "", stDim.Render("  "+empty))
+		return append(out, "", st.dim.Render("  "+empty))
 	}
 
 	for i, t := range l.Visible() {
@@ -66,11 +66,11 @@ func trackTable(l *collection.List[domain.Track], w int, playing func(int, domai
 
 		switch {
 		case i == l.Cursor():
-			row = stCursor.Render(fit(row, w))
+			row = st.cursor.Render(fit(row, w))
 		case isPlaying, l.IsSelected(i):
-			row = stAccent.Render(ansi.Strip(row))
+			row = st.accent.Render(ansi.Strip(row))
 		default:
-			row = stText.Render(row)
+			row = st.text.Render(row)
 		}
 		out = append(out, row)
 	}

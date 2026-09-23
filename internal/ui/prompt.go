@@ -23,10 +23,6 @@ func newPrompt(kind promptKind, symbol, value string) *prompt {
 	in := textinput.New()
 	in.Prompt = symbol
 	in.SetValue(value)
-	styles := in.Styles()
-	styles.Focused.Prompt = stAccent
-	styles.Focused.Text = stBright
-	in.SetStyles(styles)
 	in.Focus()
 	return &prompt{kind: kind, input: in}
 }
@@ -53,7 +49,8 @@ func (p *prompt) update(m *Model, msg tea.KeyPressMsg) tea.Cmd {
 	return cmd
 }
 
-func (p *prompt) view(w int) string {
+func (p *prompt) view(st *styles, w int) string {
 	p.input.SetWidth(max(1, w-2))
+	st.styleInput(&p.input)
 	return p.input.View()
 }

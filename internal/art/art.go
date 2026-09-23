@@ -4,7 +4,9 @@
 package art
 
 import (
+	"fmt"
 	"image"
+	"strings"
 
 	"github.com/matjam/encomplayer/internal/registry"
 )
@@ -49,6 +51,26 @@ type Renderer interface {
 
 // Renderers is the registry of image protocols.
 type Renderers = registry.Registry[Renderer]
+
+// Choose resolves a protocol setting to a renderer. "auto" or "" detects the
+// terminal from getenv, and "off" returns a nil renderer.
+func Choose(setting string, getenv func(string) string) (Renderer, Protocol, error) {
+	protocol := strings.ToLower(setting)
+	if protocol == "" || protocol == Auto {
+		protocol = Detect(getenv)
+	}
+	if protocol == Off {
+		return nil, Off, nil
+	}
+	r, ok := DefaultRenderers().Get(protocol)
+	if !ok {
+		return nil, "", fmt.Errorf("unknown album art protocol %q", setting)
+	}
+	return r, protocol, nil
+}
+
+// Settings lists the values Choose accepts.
+var Settings = []string{Auto, Kitty, ITerm, Blocks, Off}
 
 // DefaultRenderers registers every built-in protocol.
 func DefaultRenderers() *Renderers {
