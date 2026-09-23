@@ -15,6 +15,11 @@ import (
 func (m *Model) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
+	if m.deps.Config.EnableMouse {
+		// Cell motion reports movement only while a button is held, which
+		// is exactly what dragging a divider needs.
+		v.MouseMode = tea.MouseModeCellMotion
+	}
 	v.BackgroundColor = colBackground
 	v.ForegroundColor = colCyan
 	v.WindowTitle = "ENCOMPLAYER"
@@ -62,15 +67,15 @@ func (m *Model) header() []string {
 	}
 
 	vol := m.deps.Player.Volume()
-	volBar := stDim.Render("VOL ") + meter(vol, 100, 10) + stText.Render(fmt.Sprintf(" %3d%%", vol))
-	modes := strings.Join([]string{
-		flag("REPEAT", m.modes.Repeat),
-		flag("RANDOM", m.modes.Random),
-		flag("SINGLE", m.modes.Single),
-		flag("CONSUME", m.modes.Consume),
-	}, " ")
+	volBar := stDim.Render(volLabel) + meter(vol, 100, volSegments) + stText.Render(fmt.Sprintf(" %3d%%", vol))
+	on := []bool{m.modes.Repeat, m.modes.Random, m.modes.Single, m.modes.Consume}
+	flags := make([]string, len(modeNames))
+	for i, name := range modeNames {
+		flags[i] = flag(name, on[i])
+	}
+	modes := strings.Join(flags, " ")
 
-	rightW := max(ansi.StringWidth(volBar), ansi.StringWidth(modes)) + 1
+	rightW := max(volBarWidth, modesWidth) + 1
 	leftW := max(1, inner-rightW)
 	line1 := " " + fit(state+"  "+now, leftW-1) + fitRight(volBar, rightW)
 	line2 := " " + fit(strings.Repeat(" ", 11)+detail, leftW-1) + fitRight(modes, rightW)
@@ -99,7 +104,7 @@ func meter(value, maximum, segments int) string {
 func (m *Model) tabBar() string {
 	var parts []string
 	for i, t := range m.tabs {
-		label := fmt.Sprintf(" %d %s ", i+1, strings.ToUpper(t.title()))
+		label := tabLabel(i, t)
 		if i == m.active {
 			parts = append(parts, stTabOn.Render(label))
 		} else {
@@ -112,34 +117,45 @@ func (m *Model) tabBar() string {
 }
 
 func (m *Model) footer() []string {
-	inner := m.width - 2
-	return panel("signal", []string{m.spectrumLine(inner), m.progressLine(inner)}, m.width, footerRows, false)
+	body := append(m.spectrumLines(m.width-2, m.spectrumRows()), m.progressLine())
+	return panel("signal", body, m.width, m.footerRows(), false)
 }
 
+// levels are the eighth-block glyphs; each spectrum row resolves eight steps.
 var levels = []rune(" ▁▂▃▄▅▆▇█")
 
-func (m *Model) spectrumLine(w int) string {
-	var b strings.Builder
-	for x := range w {
-		v := m.spectrum[x*len(m.spectrum)/max(1, w)]
-		ch := string(levels[int(v*float64(len(levels)-1)+0.5)])
-		switch {
-		case v > 0.85:
-			b.WriteString(stAccent.Render(ch))
-		case v > 0.5:
-			b.WriteString(stBright.Render(ch))
-		default:
-			b.WriteString(stText.Render(ch))
+// spectrumLines draws the analyser rows tall. Each bar fills bottom-up in
+// eighths of a row, and rows higher up the strip glow brighter, then orange,
+// like a VU meter.
+func (m *Model) spectrumLines(w, rows int) []string {
+	steps := rows * (len(levels) - 1)
+	lines := make([]string, rows)
+	for r := range rows {
+		fromBottom := rows - 1 - r
+		style := stText
+		switch height := float64(fromBottom+1) / float64(rows); {
+		case height > 0.85 && rows > 1:
+			style = stAccent
+		case height > 0.5:
+			style = stBright
 		}
+
+		var b strings.Builder
+		for x := range w {
+			v := m.spectrum[x*len(m.spectrum)/max(1, w)]
+			lit := int(v*float64(steps)+0.5) - fromBottom*(len(levels)-1)
+			b.WriteRune(levels[max(0, min(lit, len(levels)-1))])
+		}
+		lines[r] = style.Render(b.String())
 	}
-	return b.String()
+	return lines
 }
 
-func (m *Model) progressLine(w int) string {
+func (m *Model) progressLine() string {
 	pos, length := m.position, m.length
 	left := stText.Render(" " + clock(pos) + " ")
 	right := stText.Render(" " + clock(length) + " ")
-	barW := max(1, w-ansi.StringWidth(left)-ansi.StringWidth(right))
+	_, barW := m.progressBarSpan()
 
 	filled := 0
 	if length > 0 {

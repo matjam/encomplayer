@@ -66,6 +66,36 @@ func (t *browserTab) find(query string, forward, include bool) bool {
 	}, forward, include)
 }
 
+// click works column by column: the parent column goes up a level, the
+// current column moves the cursor (double click opens or plays), and the
+// preview column opens the clicked child.
+func (t *browserTab) click(m *Model, x, y int, double bool) tea.Cmd {
+	parentW, currentW, _ := browserSplit(m, m.width)
+	row := y - 1 // below the panel border
+
+	switch {
+	case x < parentW:
+		if p := t.browser.Parent(); p != nil {
+			if i, ok := p.IndexAtRow(row); ok {
+				t.browser.Leave()
+				t.browser.Current().SetCursor(i)
+			}
+		}
+	case x < parentW+currentW:
+		if listClick(t.browser.Current(), row) && double {
+			_, cmd := t.handle(m, keymap.Action{Name: keymap.Confirm})
+			return cmd
+		}
+	default:
+		if row >= 0 && row < len(t.browser.Preview()) && t.browser.Enter() {
+			t.browser.Current().SetCursor(row)
+		}
+	}
+	return nil
+}
+
+func (t *browserTab) scroll(_ *Model, delta int) { t.browser.Current().Move(delta) }
+
 func (t *browserTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 	l := t.browser.Current()
 	if navigate(l, a) {
@@ -183,9 +213,7 @@ func (t *browserTab) rename(m *Model) tea.Cmd {
 }
 
 func (t *browserTab) view(m *Model, w, h int) []string {
-	parentW := w / 4
-	previewW := w * 3 / 10
-	currentW := w - parentW - previewW
+	parentW, currentW, previewW := browserSplit(m, w)
 	playing := m.playingPath()
 
 	var parent []string

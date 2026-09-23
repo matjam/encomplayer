@@ -24,6 +24,13 @@ type Config struct {
 	// SeekSeconds is how far SeekForward and SeekBack move.
 	SeekSeconds int `json:"seek_seconds"`
 
+	// EnableMouse turns on clicking and scrolling, as rmpc's enable_mouse.
+	EnableMouse bool `json:"enable_mouse"`
+
+	// ScrollAmount is how many rows one wheel notch moves, as rmpc's
+	// scroll_amount.
+	ScrollAmount int `json:"scroll_amount"`
+
 	// RescanSeconds is how often the library is checked for changes. Zero
 	// picks 60 s for local disks and 600 s for network mounts; a negative
 	// value turns periodic rescans off.
@@ -37,9 +44,11 @@ type Config struct {
 // Default returns the built-in settings.
 func Default() Config {
 	return Config{
-		AlbumArt:    "auto",
-		VolumeStep:  5,
-		SeekSeconds: 5,
+		AlbumArt:     "auto",
+		VolumeStep:   5,
+		SeekSeconds:  5,
+		EnableMouse:  true,
+		ScrollAmount: 1,
 	}
 }
 

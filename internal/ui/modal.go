@@ -47,6 +47,11 @@ func (s *scrollModal) update(_ *Model, msg tea.KeyPressMsg) (bool, tea.Cmd) {
 	return false, nil
 }
 
+// scroll moves the view by delta lines, for the mouse wheel.
+func (s *scrollModal) scroll(delta int) {
+	s.offset = max(0, min(s.offset+delta, len(s.lines)-max(1, s.height-2)))
+}
+
 func (s *scrollModal) view(w, h int) []string {
 	boxW := min(w-4, 96)
 	boxH := min(h-2, len(s.lines)+2)

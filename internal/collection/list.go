@@ -66,6 +66,16 @@ func (l *List[T]) SetHeight(h int) {
 	l.scroll()
 }
 
+// IndexAtRow returns the item index shown on viewport row r, for mapping a
+// mouse click to an item.
+func (l *List[T]) IndexAtRow(r int) (int, bool) {
+	i := l.offset + r
+	if r < 0 || r >= l.height || i >= len(l.items) {
+		return 0, false
+	}
+	return i, true
+}
+
 // Visible yields the index and item of each row in the viewport.
 func (l *List[T]) Visible() iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {

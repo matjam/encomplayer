@@ -52,6 +52,35 @@ func TestListNavigation(t *testing.T) {
 	}
 }
 
+func TestListIndexAtRow(t *testing.T) {
+	l := NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	l.SetHeight(3)
+	l.SetCursor(7) // viewport shows 5, 6, 7
+
+	tests := []struct {
+		row    int
+		want   int
+		wantOK bool
+	}{
+		{row: 0, want: 5, wantOK: true},
+		{row: 2, want: 7, wantOK: true},
+		{row: 3, wantOK: false},
+		{row: -1, wantOK: false},
+	}
+	for _, tc := range tests {
+		got, ok := l.IndexAtRow(tc.row)
+		if ok != tc.wantOK || (ok && got != tc.want) {
+			t.Errorf("IndexAtRow(%d) = %d, %v; want %d, %v", tc.row, got, ok, tc.want, tc.wantOK)
+		}
+	}
+
+	short := NewList([]int{0, 1})
+	short.SetHeight(5)
+	if _, ok := short.IndexAtRow(3); ok {
+		t.Error("row past the last item should miss")
+	}
+}
+
 func TestListSelectionAndFind(t *testing.T) {
 	l := NewList([]string{"alpha", "beta", "gamma", "delta"})
 
