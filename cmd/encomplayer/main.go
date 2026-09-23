@@ -31,7 +31,8 @@ import (
 	"github.com/matjam/encomplayer/internal/ui"
 )
 
-var version = "v0.1.0"
+// version is set at build time with -ldflags "-X main.version=v1.2.3".
+var version = "dev"
 
 func main() {
 	if err := run(); err != nil {
