@@ -26,12 +26,6 @@ func newSearchTab() *searchTab {
 	in := textinput.New()
 	in.Prompt = ""
 	in.Placeholder = "press i to enter a query"
-	styles := in.Styles()
-	styles.Focused.Text = stBright
-	styles.Blurred.Text = stText
-	styles.Focused.Placeholder = stDim
-	styles.Blurred.Placeholder = stDim
-	in.SetStyles(styles)
 	return &searchTab{input: in, results: collection.NewList[domain.Track](nil)}
 }
 
@@ -136,14 +130,16 @@ func (s *searchTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 }
 
 func (s *searchTab) view(m *Model, w, h int) []string {
-	field := stAccent.Render("‹ " + string(library.Fields[s.field]) + " ›")
-	query := stDim.Render("QUERY ▸ ") + s.input.View()
-	form := []string{fit(query, w-2-30) + fitRight(stDim.Render("FIELD ")+field+stDim.Render(" h/l"), 30)}
+	st := m.st
+	st.styleInput(&s.input)
+	field := st.accent.Render("‹ " + string(library.Fields[s.field]) + " ›")
+	query := st.dim.Render("QUERY ▸ ") + s.input.View()
+	form := []string{fit(query, w-2-30) + fitRight(st.dim.Render("FIELD ")+field+st.dim.Render(" h/l"), 30)}
 
 	playing := m.playingPath()
 	isPlaying := func(_ int, t domain.Track) bool { return t.Path == playing && playing != "" }
-	results := trackTable(s.results, w-2, isPlaying, "NO MATCHES")
+	results := st.trackTable(s.results, w-2, isPlaying, "NO MATCHES")
 
 	title := fmt.Sprintf("results · %d", s.results.Len())
-	return append(panel("search", form, w, 3, s.editing), panel(title, results, w, h-3, !s.editing)...)
+	return append(st.panel("search", form, w, 3, s.editing), st.panel(title, results, w, h-3, !s.editing)...)
 }

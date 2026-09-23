@@ -11,6 +11,7 @@ import (
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/theme"
 )
 
 // Player is the playback engine the UI drives.
@@ -71,9 +72,18 @@ type Deps struct {
 	// Formats lists the playable extensions, for display.
 	Formats string
 
-	Config    config.Config
-	State     config.State
-	StatePath string
-	MusicDir  string
-	Version   string
+	Themes ThemeStore
+
+	Config   config.Config
+	State    config.State
+	Paths    config.Paths
+	MusicDir string
+	Version  string
+}
+
+// ThemeStore finds built-in and custom themes.
+type ThemeStore interface {
+	Load(name string) (theme.Theme, error)
+	Names() []string
+	Dir() string
 }

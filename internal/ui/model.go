@@ -69,6 +69,7 @@ type Model struct {
 	art      artState
 	mouse    mouseState
 	sizes    config.Layout
+	st       *styles
 
 	spectrum []float64
 	position time.Duration
@@ -90,6 +91,9 @@ func New(ctx context.Context, deps Deps) *Model {
 	}
 	if m.sizes == (config.Layout{}) {
 		m.sizes = config.DefaultLayout()
+	}
+	if err := m.applyTheme(deps.Config.Theme); err != nil {
+		m.status.errorf("%v", err)
 	}
 	deps.Player.SetVolume(deps.State.Volume)
 
@@ -205,6 +209,9 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 		}
 		return nil
 
+	case ReloadMsg:
+		return m.reload()
+
 	case tea.KeyPressMsg:
 		return m.handleKey(msg)
 
@@ -246,7 +253,7 @@ func (m *Model) saveState() {
 		PositionSeconds: m.resumePosition().Seconds(),
 	}
 	m.lastSaved = time.Now()
-	if err := config.SaveState(m.deps.StatePath, st); err != nil {
+	if err := config.SaveState(m.deps.Paths.State, st); err != nil {
 		m.status.errorf("STATE NOT SAVED: %v", err)
 	}
 }

@@ -73,15 +73,16 @@ var bootScript = []struct{ label, value string }{
 }
 
 func (m *Model) bootView() string {
+	st := m.st
 	var out []string
 	for row := range len(logo[0]) {
 		var b strings.Builder
 		for _, letter := range logo {
 			b.WriteString(letter[row])
 		}
-		out = append(out, stText.Render(b.String()))
+		out = append(out, st.text.Render(b.String()))
 	}
-	out = append(out, "", stDim.Render(strings.Repeat("━", 46)), "")
+	out = append(out, "", st.dim.Render(strings.Repeat("━", 46)), "")
 
 	const labelW, lineW = 34, 72
 	for i, line := range bootScript[:min(m.boot.step, len(bootScript))] {
@@ -89,17 +90,17 @@ func (m *Model) bootView() string {
 		case line.label == "":
 			out = append(out, "")
 		case line.value == "":
-			style := stDim
+			style := st.dim
 			if i == len(bootScript)-1 {
-				style = stAccent
+				style = st.accent
 			}
 			out = append(out, style.Render(line.label))
 		case line.value == "{scan}" && m.scan.running && !m.scan.background:
-			dots := stGrid.Render(strings.Repeat(".", labelW-len(line.label)))
-			out = append(out, stText.Render("> "+line.label+" ")+dots+" "+scanBar(m.scan.progress, lineW-labelW-4))
+			dots := st.grid.Render(strings.Repeat(".", labelW-len(line.label)))
+			out = append(out, st.text.Render("> "+line.label+" ")+dots+" "+st.scanBar(m.scan.progress, lineW-labelW-4))
 		default:
-			dots := stGrid.Render(strings.Repeat(".", labelW-len(line.label)))
-			out = append(out, stText.Render("> "+line.label+" ")+dots+" "+stBright.Render(ansi.Truncate(m.bootValue(line.value), lineW-labelW-4, "…")))
+			dots := st.grid.Render(strings.Repeat(".", labelW-len(line.label)))
+			out = append(out, st.text.Render("> "+line.label+" ")+dots+" "+st.bright.Render(ansi.Truncate(m.bootValue(line.value), lineW-labelW-4, "…")))
 		}
 	}
 

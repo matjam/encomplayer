@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/library/ffprobe"
 	"github.com/matjam/encomplayer/internal/playlist"
+	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
 )
 
@@ -60,19 +60,15 @@ func run() error {
 		return nil
 	}
 
-	cfg, err := config.Load(*configPath)
+	paths.Config = *configPath
+	cfg, err := config.Load(paths.Config)
 	if err != nil {
 		return err
 	}
-	if *artFlag != "" {
-		cfg.AlbumArt = *artFlag
-	}
 
-	km := keymap.Default()
-	for ctx, binds := range cfg.Keybinds {
-		if err := km.BindAll(keymap.Context(ctx), binds); err != nil {
-			return fmt.Errorf("config keybinds: %w", err)
-		}
+	km, err := keymap.WithOverrides(cfg.Keybinds)
+	if err != nil {
+		return fmt.Errorf("config keybinds: %w", err)
 	}
 
 	decoders := audio.NewDecoders()
@@ -91,7 +87,13 @@ func run() error {
 	}
 	tagger := library.NewTagger(readers...)
 
-	renderer, protocol, err := chooseArt(cfg.AlbumArt)
+	// The --art flag applies to this run only; it is not written back to
+	// the config file.
+	artSetting := cfg.AlbumArt
+	if *artFlag != "" {
+		artSetting = *artFlag
+	}
+	renderer, protocol, err := art.Choose(artSetting, os.Getenv)
 	if err != nil {
 		return err
 	}
@@ -120,34 +122,22 @@ func run() error {
 		Art:         renderer,
 		ArtProtocol: protocol,
 		Formats:     formats,
+		Themes:      theme.NewStore(paths.Themes),
 		Config:      cfg,
 		State:       state,
-		StatePath:   paths.State,
+		Paths:       paths,
 		MusicDir:    musicDir(cfg),
 		Version:     version,
 	})
 
-	if _, err := tea.NewProgram(model, tea.WithContext(ctx)).Run(); err != nil && !errors.Is(err, tea.ErrProgramKilled) {
+	program := tea.NewProgram(model, tea.WithContext(ctx))
+	stopReload := notifyReload(func() { program.Send(ui.ReloadMsg{}) })
+	defer stopReload()
+
+	if _, err := program.Run(); err != nil && !errors.Is(err, tea.ErrProgramKilled) {
 		return fmt.Errorf("run ui: %w", err)
 	}
 	return nil
-}
-
-// chooseArt resolves the configured protocol to a renderer. "off" returns a
-// nil renderer.
-func chooseArt(setting string) (art.Renderer, string, error) {
-	protocol := strings.ToLower(setting)
-	if protocol == "" || protocol == art.Auto {
-		protocol = art.Detect(os.Getenv)
-	}
-	if protocol == art.Off {
-		return nil, art.Off, nil
-	}
-	r, ok := art.DefaultRenderers().Get(protocol)
-	if !ok {
-		return nil, "", fmt.Errorf("unknown album art protocol %q", setting)
-	}
-	return r, protocol, nil
 }
 
 // musicDir picks the folder to scan: the argument, then the config file,

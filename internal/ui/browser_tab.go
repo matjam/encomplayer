@@ -213,40 +213,41 @@ func (t *browserTab) rename(m *Model) tea.Cmd {
 }
 
 func (t *browserTab) view(m *Model, w, h int) []string {
+	st := m.st
 	parentW, currentW, previewW := browserSplit(m, w)
 	playing := m.playingPath()
 
 	var parent []string
 	parentTitle := "ROOT"
 	if p := t.browser.Parent(); p != nil {
-		parent = renderEntries(p, parentW-2, false, playing)
+		parent = st.renderEntries(p, parentW-2, false, playing)
 		if e, ok := p.Current(); ok {
 			parentTitle = e.label
 		}
 	} else {
-		parent = []string{stDim.Render(t.hint)}
+		parent = []string{st.dim.Render(t.hint)}
 	}
 
 	title := t.name
 	if path := t.browser.Path(); len(path) > 0 {
 		title = path[len(path)-1].label
 	}
-	current := renderEntries(t.browser.Current(), currentW-2, true, playing)
+	current := st.renderEntries(t.browser.Current(), currentW-2, true, playing)
 	if t.browser.Current().Len() == 0 {
-		current = []string{stDim.Render(emptyMessage(m))}
+		current = []string{st.dim.Render(emptyMessage(m))}
 	}
 
 	var preview []string
 	if e, ok := t.browser.Current().Current(); ok && e.isLeaf() {
-		preview = trackDetails(e.track, previewW-2)
+		preview = st.trackDetails(e.track, previewW-2)
 	} else {
-		preview = renderPlain(t.browser.Preview(), previewW-2, h-2, playing)
+		preview = st.renderPlain(t.browser.Preview(), previewW-2, h-2, playing)
 	}
 
 	return hjoin(
-		panel(parentTitle, parent, parentW, h, false),
-		panel(title, current, currentW, h, true),
-		panel("preview", preview, previewW, h, false),
+		st.panel(parentTitle, parent, parentW, h, false),
+		st.panel(title, current, currentW, h, true),
+		st.panel("preview", preview, previewW, h, false),
 	)
 }
 
@@ -260,46 +261,46 @@ func emptyMessage(m *Model) string {
 	return "EMPTY"
 }
 
-func renderEntries(l *collection.List[entry], w int, focused bool, playing string) []string {
+func (st *styles) renderEntries(l *collection.List[entry], w int, focused bool, playing string) []string {
 	var out []string
 	for i, e := range l.Visible() {
-		row := entryRow(e, w, l.IsSelected(i), playing)
+		row := st.entryRow(e, w, l.IsSelected(i), playing)
 		if i == l.Cursor() {
-			style := stDimCur
+			style := st.dimCursor
 			if focused {
-				style = stCursor
+				style = st.cursor
 			}
-			row = style.Render(fit(stripStyles(entryRow(e, w, l.IsSelected(i), "")), w))
+			row = style.Render(fit(stripStyles(st.entryRow(e, w, l.IsSelected(i), "")), w))
 		}
 		out = append(out, row)
 	}
 	return out
 }
 
-func renderPlain(items []entry, w, h int, playing string) []string {
+func (st *styles) renderPlain(items []entry, w, h int, playing string) []string {
 	var out []string
 	for i, e := range items {
 		if i >= h {
 			break
 		}
-		out = append(out, entryRow(e, w, false, playing))
+		out = append(out, st.entryRow(e, w, false, playing))
 	}
 	return out
 }
 
-func entryRow(e entry, w int, selected bool, playing string) string {
+func (st *styles) entryRow(e entry, w int, selected bool, playing string) string {
 	mark := "  "
 	switch {
 	case selected:
-		mark = stAccent.Render("◆ ")
+		mark = st.accent.Render("◆ ")
 	case e.isLeaf() && e.track.Path == playing && playing != "":
-		mark = stAccent.Render("▶ ")
+		mark = st.accent.Render("▶ ")
 	}
-	label := stText.Render(e.label)
+	label := st.text.Render(e.label)
 	if !e.isLeaf() {
-		label = stBright.Render(e.label)
+		label = st.bright.Render(e.label)
 	}
-	detail := stDim.Render(e.detail)
+	detail := st.dim.Render(e.detail)
 	dw := len(e.detail)
 	return mark + fit(label, max(1, w-2-dw-1)) + " " + detail
 }

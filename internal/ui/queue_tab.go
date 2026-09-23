@@ -114,16 +114,17 @@ func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 }
 
 func (q *queueTab) view(m *Model, w, h int) []string {
+	st := m.st
 	artW, queueW := queueSplit(m, w)
 
 	current := m.queue.CurrentIndex()
 	isCurrent := func(i int, _ domain.Track) bool { return i == current }
-	body := trackTable(m.queueList, queueW-2, isCurrent, "QUEUE EMPTY · ADD TRACKS WITH  a  FROM ANY BROWSER TAB")
+	body := st.trackTable(m.queueList, queueW-2, isCurrent, "QUEUE EMPTY · ADD TRACKS WITH  a  FROM ANY BROWSER TAB")
 
 	title := fmt.Sprintf("queue · %d tracks · %s", m.queue.Len(), duration(totalDuration(m.queue.Items())))
-	queuePanel := panel(title, body, queueW, h, true)
+	queuePanel := st.panel(title, body, queueW, h, true)
 	if artW == 0 {
 		return queuePanel
 	}
-	return hjoin(panel("visual", m.artBody(artW-2, h-2), artW, h, false), queuePanel)
+	return hjoin(st.panel("visual", m.artBody(artW-2, h-2), artW, h, false), queuePanel)
 }

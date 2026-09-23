@@ -1,38 +1,64 @@
 package ui
 
 import (
+	"image/color"
 	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/matjam/encomplayer/internal/theme"
 )
 
-// ENCOM OS-12 palette: cyan grid lines on near-black, with orange reserved
-// for the playing track, marks and warnings.
-var (
-	colBackground = lipgloss.Color("#02090C")
-	colCyan       = lipgloss.Color("#6FC3DF")
-	colBright     = lipgloss.Color("#E6FFFF")
-	colDim        = lipgloss.Color("#2A6475")
-	colGrid       = lipgloss.Color("#123C48")
-	colOrange     = lipgloss.Color("#FF9A2E")
-	colRed        = lipgloss.Color("#FF4A3D")
-)
+// styles are the lipgloss styles for one theme. The model owns the current
+// set and swaps it whole when the theme changes.
+type styles struct {
+	theme theme.Theme
 
-var (
-	stText     = lipgloss.NewStyle().Foreground(colCyan)
-	stBright   = lipgloss.NewStyle().Foreground(colBright).Bold(true)
-	stDim      = lipgloss.NewStyle().Foreground(colDim)
-	stGrid     = lipgloss.NewStyle().Foreground(colGrid)
-	stAccent   = lipgloss.NewStyle().Foreground(colOrange).Bold(true)
-	stError    = lipgloss.NewStyle().Foreground(colRed).Bold(true)
-	stCursor   = lipgloss.NewStyle().Foreground(colBackground).Background(colCyan).Bold(true)
-	stDimCur   = lipgloss.NewStyle().Foreground(colBright).Background(colGrid)
-	stTabOn    = lipgloss.NewStyle().Foreground(colBackground).Background(colCyan).Bold(true)
-	stTabOff   = lipgloss.NewStyle().Foreground(colDim)
-	stBorder   = lipgloss.NewStyle().Foreground(colDim)
-	stBorderOn = lipgloss.NewStyle().Foreground(colCyan)
-)
+	// background fills the screen, or is nil to keep the terminal's own.
+	background color.Color
+
+	text, bright, dim, grid, accent, err lipgloss.Style
+	cursor, dimCursor, tabOn, tabOff     lipgloss.Style
+	border, borderOn                     lipgloss.Style
+}
+
+func newStyles(t theme.Theme) *styles {
+	c := lipgloss.Color
+	st := &styles{
+		theme:     t,
+		text:      lipgloss.NewStyle().Foreground(c(t.Text)),
+		bright:    lipgloss.NewStyle().Foreground(c(t.Bright)).Bold(true),
+		dim:       lipgloss.NewStyle().Foreground(c(t.Dim)),
+		grid:      lipgloss.NewStyle().Foreground(c(t.Grid)),
+		accent:    lipgloss.NewStyle().Foreground(c(t.Accent)).Bold(true),
+		err:       lipgloss.NewStyle().Foreground(c(t.Error)).Bold(true),
+		cursor:    lipgloss.NewStyle().Foreground(c(t.SelectionText)).Background(c(t.Selection)).Bold(true),
+		dimCursor: lipgloss.NewStyle().Foreground(c(t.Bright)).Background(c(t.Grid)),
+		tabOn:     lipgloss.NewStyle().Foreground(c(t.SelectionText)).Background(c(t.Selection)).Bold(true),
+		tabOff:    lipgloss.NewStyle().Foreground(c(t.Dim)),
+		border:    lipgloss.NewStyle().Foreground(c(t.Border)),
+		borderOn:  lipgloss.NewStyle().Foreground(c(t.Text)),
+	}
+	if t.Background != "" {
+		st.background = c(t.Background)
+	}
+	return st
+}
+
+// styleInput colours a text input for the current theme. Inputs are styled
+// at draw time so they follow theme changes.
+func (st *styles) styleInput(in *textinput.Model) {
+	s := in.Styles()
+	s.Focused.Prompt = st.accent
+	s.Focused.Text = st.bright
+	s.Focused.Placeholder = st.dim
+	s.Blurred.Prompt = st.dim
+	s.Blurred.Text = st.text
+	s.Blurred.Placeholder = st.dim
+	in.SetStyles(s)
+}
 
 // fit truncates or pads s, which may contain ANSI sequences, to exactly w
 // cells.
@@ -55,19 +81,19 @@ func fitRight(s string, w int) string {
 }
 
 // panel draws body inside an ENCOM-style frame of exactly w × h cells.
-func panel(title string, body []string, w, h int, focused bool) []string {
+func (st *styles) panel(title string, body []string, w, h int, focused bool) []string {
 	if w < 4 || h < 2 {
 		return blankLines(w, h)
 	}
-	border := stBorder
+	border := st.border
 	if focused {
-		border = stBorderOn
+		border = st.borderOn
 	}
 	inner := w - 2
 
 	label := ""
 	if title != "" {
-		label = stAccent.Render("◆") + " " + stBright.Render(strings.ToUpper(title)) + " "
+		label = st.accent.Render("◆") + " " + st.bright.Render(strings.ToUpper(title)) + " "
 	}
 	labelW := ansi.StringWidth(label)
 	topFill := max(0, inner-labelW-1)
@@ -84,7 +110,7 @@ func panel(title string, body []string, w, h int, focused bool) []string {
 	}
 
 	tick := min(3, inner)
-	lines = append(lines, border.Render("└")+stText.Render(strings.Repeat("━", tick))+border.Render(strings.Repeat("─", inner-tick)+"┘"))
+	lines = append(lines, border.Render("└")+st.text.Render(strings.Repeat("━", tick))+border.Render(strings.Repeat("─", inner-tick)+"┘"))
 	return lines
 }
 
