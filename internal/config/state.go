@@ -1,0 +1,47 @@
+package config
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/matjam/encomplayer/internal/domain"
+	"github.com/matjam/encomplayer/internal/fsutil"
+)
+
+// State is what EncomPlayer restores on the next launch.
+type State struct {
+	Queue   []string     `json:"queue"`
+	Current int          `json:"current"`
+	Modes   domain.Modes `json:"modes"`
+	Volume  int          `json:"volume"`
+	Tab     string       `json:"tab"`
+}
+
+// DefaultState is used on first launch.
+func DefaultState() State {
+	return State{Current: -1, Volume: 70}
+}
+
+// LoadState reads saved state. A missing or unreadable file yields defaults,
+// because losing the previous queue should never stop the player starting.
+func LoadState(path string) State {
+	s := DefaultState()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return s
+	}
+	if json.Unmarshal(data, &s) != nil {
+		return DefaultState()
+	}
+	return s
+}
+
+// SaveState writes state atomically.
+func SaveState(path string, s State) error {
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode state: %w", err)
+	}
+	return fsutil.WriteFileAtomic(path, data)
+}
