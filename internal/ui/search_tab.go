@@ -70,6 +70,28 @@ func (s *searchTab) key(m *Model, msg tea.KeyPressMsg) tea.Cmd {
 	return cmd
 }
 
+// Search layout: a three-row form panel, then the results panel with its
+// border, column header and rule.
+const (
+	searchFormRows   = 3
+	searchResultsRow = searchFormRows + queueFirstRow
+)
+
+func (s *searchTab) click(m *Model, _, y int, double bool) tea.Cmd {
+	if y < searchFormRows {
+		s.editing = true
+		return s.input.Focus()
+	}
+	if listClick(s.results, y-searchResultsRow) && double {
+		if t, ok := s.results.Current(); ok {
+			return m.enqueueAndPlay([]domain.Track{t})
+		}
+	}
+	return nil
+}
+
+func (s *searchTab) scroll(_ *Model, delta int) { s.results.Move(delta) }
+
 func (s *searchTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 	l := s.results
 	if navigate(l, a) {

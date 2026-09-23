@@ -50,6 +50,22 @@ The defaults match rmpc. Press `?` for the full list.
 The Playlists tab starts with **ALL MUSIC**, so `6` `X` also shuffles
 everything, and `C-s s` on it saves the library as a playlist.
 
+## Mouse
+
+| Where | Click | Double-click | Wheel |
+|---|---|---|---|
+| Tab bar | Switch tab | | |
+| Queue, browser middle column, search results | Move cursor | Play, or open a folder | Scroll |
+| Browser left column | Go up a level | | |
+| Browser right column | Open the clicked item | | |
+| Seek bar | Seek | | |
+| Volume meter, mode flags | Set volume, toggle mode | | |
+| Help | | | Scroll |
+
+Drag a divider to resize panes: the SIGNAL strip's top edge (the spectrum
+grows with it), the border between album art and the queue, and the borders
+between browser columns. Sizes are remembered between sessions.
+
 ## Configuration
 
 `~/.config/encomplayer/config.json` (or `$XDG_CONFIG_HOME`):
@@ -61,6 +77,8 @@ everything, and `C-s s` on it saves the library as a playlist.
   "volume_step": 5,
   "seek_seconds": 5,
   "rescan_seconds": 0,
+  "enable_mouse": true,
+  "scroll_amount": 1,
   "keybinds": {
     "global": { "<C-p>": "TogglePause" },
     "queue": { "x": "Delete" }

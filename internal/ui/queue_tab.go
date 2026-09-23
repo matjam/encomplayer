@@ -37,6 +37,21 @@ func (q *queueTab) find(query string, forward, include bool) bool {
 	}, forward, include)
 }
 
+// Queue rows start below the border, column header and rule.
+const queueFirstRow = 3
+
+func (q *queueTab) click(m *Model, x, y int, double bool) tea.Cmd {
+	if artW, _ := queueSplit(m, m.width); x < artW {
+		return nil
+	}
+	if listClick(m.queueList, y-queueFirstRow) && double {
+		return m.playIndex(m.queueList.Cursor())
+	}
+	return nil
+}
+
+func (q *queueTab) scroll(m *Model, delta int) { m.queueList.Move(delta) }
+
 func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 	l := m.queueList
 	if navigate(l, a) {
@@ -99,11 +114,7 @@ func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 }
 
 func (q *queueTab) view(m *Model, w, h int) []string {
-	artW := 0
-	if m.deps.Art != nil && w >= 70 {
-		artW = w * 35 / 100
-	}
-	queueW := w - artW
+	artW, queueW := queueSplit(m, w)
 
 	current := m.queue.CurrentIndex()
 	isCurrent := func(i int, _ domain.Track) bool { return i == current }

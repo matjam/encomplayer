@@ -44,10 +44,11 @@ type artPlaceMsg uint64
 
 // artBox returns the image size in cells and its top-left screen cell.
 func (m *Model) artBox() (cols, rows, x, y int) {
-	if m.deps.Art == nil || m.width < 70 {
+	artW, _ := queueSplit(m, m.width)
+	if artW == 0 {
 		return 0, 0, 0, 0
 	}
-	innerW := m.width*35/100 - 2
+	innerW := artW - 2
 	innerH := m.bodyHeight() - 2
 	rows = min(innerH-artMetaRows-1, innerW/2)
 	if rows < 4 {
@@ -55,7 +56,7 @@ func (m *Model) artBox() (cols, rows, x, y int) {
 	}
 	cols = min(innerW, rows*2)
 	x = 1 + (innerW-cols)/2
-	y = headerRows + tabRows + 1 + 1
+	y = bodyTop + 1 + 1
 	return cols, rows, x, y
 }
 
@@ -129,7 +130,7 @@ func (m *Model) receiveArt(msg artMsg) tea.Cmd {
 
 // artSignature changes whenever something may cover or move the art.
 func (m *Model) artSignature() string {
-	return fmt.Sprintf("%d|%t|%t|%d|%d|%p", m.active, m.modal != nil, m.boot.active(), m.width, m.height, m.art.frame)
+	return fmt.Sprintf("%d|%t|%t|%d|%d|%p|%v", m.active, m.modal != nil, m.boot.active(), m.width, m.height, m.art.frame, m.sizes)
 }
 
 // scheduleArtPlacement erases any overlay image now and redraws it after the

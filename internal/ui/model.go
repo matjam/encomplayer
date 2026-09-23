@@ -19,14 +19,14 @@ import (
 const (
 	tickInterval = 100 * time.Millisecond
 	chordTimeout = time.Second
-	spectrumBars = 48
+	spectrumBars = 64
 )
 
-// Layout rows outside the tab body.
+// Fixed layout rows outside the tab body. The signal strip's height is
+// user-sized; see Model.footerRows.
 const (
 	headerRows = 4
 	tabRows    = 1
-	footerRows = 4
 	statusRows = 1
 )
 
@@ -57,6 +57,8 @@ type Model struct {
 	boot     bootState
 	scan     scanState
 	art      artState
+	mouse    mouseState
+	sizes    config.Layout
 
 	spectrum []float64
 	position time.Duration
@@ -74,6 +76,10 @@ func New(ctx context.Context, deps Deps) *Model {
 		modes:     deps.State.Modes,
 		resolver:  keymap.NewResolver(deps.Keymap),
 		spectrum:  make([]float64, spectrumBars),
+		sizes:     deps.State.Layout,
+	}
+	if m.sizes == (config.Layout{}) {
+		m.sizes = config.DefaultLayout()
 	}
 	deps.Player.SetVolume(deps.State.Volume)
 
@@ -185,12 +191,16 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 
 	case tea.KeyPressMsg:
 		return m.handleKey(msg)
+
+	case tea.MouseMsg:
+		return m.handleMouse(msg)
 	}
 	return nil
 }
 
 // layout pushes the current body size into every tab.
 func (m *Model) layout() {
+	m.clampLayout()
 	h := m.bodyHeight()
 	for _, t := range m.tabs {
 		t.resize(m, m.width, h)
@@ -198,7 +208,7 @@ func (m *Model) layout() {
 }
 
 func (m *Model) bodyHeight() int {
-	return max(3, m.height-headerRows-tabRows-footerRows-statusRows)
+	return max(3, m.height-headerRows-tabRows-m.footerRows()-statusRows)
 }
 
 // syncQueue refreshes the queue list after the queue changes.
@@ -216,6 +226,7 @@ func (m *Model) saveState() {
 		Modes:   m.modes,
 		Volume:  m.deps.Player.Volume(),
 		Tab:     m.tabs[m.active].title(),
+		Layout:  m.sizes,
 	}
 	if err := config.SaveState(m.deps.StatePath, st); err != nil {
 		m.status.errorf("STATE NOT SAVED: %v", err)

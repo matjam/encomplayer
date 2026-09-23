@@ -16,11 +16,31 @@ type State struct {
 	Modes   domain.Modes `json:"modes"`
 	Volume  int          `json:"volume"`
 	Tab     string       `json:"tab"`
+	Layout  Layout       `json:"layout"`
+}
+
+// Layout holds the pane sizes the user set by dragging dividers.
+type Layout struct {
+	// FooterRows is the height of the signal strip, borders included.
+	FooterRows int `json:"footer_rows"`
+
+	// ArtPercent is the album art panel's share of the queue tab width.
+	ArtPercent int `json:"art_percent"`
+
+	// ParentPercent and PreviewPercent are the outer browser columns'
+	// shares of the width; the current column gets the rest.
+	ParentPercent  int `json:"parent_percent"`
+	PreviewPercent int `json:"preview_percent"`
+}
+
+// DefaultLayout is the layout before any divider is dragged.
+func DefaultLayout() Layout {
+	return Layout{FooterRows: 4, ArtPercent: 35, ParentPercent: 25, PreviewPercent: 30}
 }
 
 // DefaultState is used on first launch.
 func DefaultState() State {
-	return State{Current: -1, Volume: 70}
+	return State{Current: -1, Volume: 70, Layout: DefaultLayout()}
 }
 
 // LoadState reads saved state. A missing or unreadable file yields defaults,
@@ -33,6 +53,9 @@ func LoadState(path string) State {
 	}
 	if json.Unmarshal(data, &s) != nil {
 		return DefaultState()
+	}
+	if s.Layout == (Layout{}) {
+		s.Layout = DefaultLayout()
 	}
 	return s
 }
