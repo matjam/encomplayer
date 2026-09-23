@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Go caches are keyed per job and platform, and by commit so every run saves
+# its incremental build; restore-keys pick up the most recent one. setup-go's
+# own cache is off because it keys only on OS and go.sum, so all Linux jobs
+# fought over a single entry and most of them missed.
+
 jobs:
   semver-guard:
     if: github.event_name == 'pull_request'
@@ -32,9 +37,40 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache: false
+      - name: Locate Go caches
+        id: go-env
+        run: |
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+          echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-env.outputs.build }}
+            ${{ steps.go-env.outputs.mod }}
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-test-${{ runner.os }}-
+
+      # Cache the downloaded packages rather than apt's lists, then install
+      # from them without `apt-get update`. A stale cache falls back to a
+      # normal update and install.
+      - name: Cache ffmpeg packages
+        if: runner.os == 'Linux'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-archives
+          key: apt-ffmpeg-${{ env.ImageOS }}-${{ env.ImageVersion }}
+          restore-keys: apt-ffmpeg-${{ env.ImageOS }}-
       - name: Install ffmpeg for decoder integration tests
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        run: |
+          mkdir -p ~/apt-archives/partial
+          install() { sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$HOME/apt-archives" ffmpeg; }
+          install || { sudo apt-get update && install; }
+          sudo chown -R "$USER" ~/apt-archives
+
       - name: gofmt
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - name: go vet
@@ -64,6 +100,21 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache: false
+      - name: Locate Go caches
+        id: go-env
+        run: |
+          echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+          echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ steps.go-env.outputs.build }}
+            ${{ steps.go-env.outputs.mod }}
+          key: go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('go.sum') }}-
+            go-build-${{ matrix.goos }}-${{ matrix.goarch }}-
       - name: Build
         id: build
         run: echo "archive=$(.github/scripts/build.sh ${{ matrix.goos }} ${{ matrix.goarch }} "$(git describe --tags --always)")" >> "$GITHUB_OUTPUT"
