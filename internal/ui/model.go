@@ -204,6 +204,7 @@ func (m *Model) bodyHeight() int {
 // syncQueue refreshes the queue list after the queue changes.
 func (m *Model) syncQueue() {
 	m.queueList.SetItems(m.queue.Items())
+	m.preloadNext()
 	m.saveState()
 }
 

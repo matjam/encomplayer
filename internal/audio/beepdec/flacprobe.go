@@ -23,8 +23,8 @@ type flacDecoder struct{}
 
 var _ audio.Prober = flacDecoder{}
 
-func (flacDecoder) Decode(ctx context.Context, path string) (beep.StreamSeekCloser, beep.Format, error) {
-	return decoder("flac", readerDecode(flac.Decode)).Decode(ctx, path)
+func (flacDecoder) Decode(ctx context.Context, src audio.Source) (beep.StreamSeekCloser, beep.Format, error) {
+	return decoder("flac", readerDecode(flac.Decode)).Decode(ctx, src)
 }
 
 // Probe implements audio.Prober.

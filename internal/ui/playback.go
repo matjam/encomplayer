@@ -33,7 +33,19 @@ func (m *Model) startCurrent() tea.Cmd {
 		return m.showArt(nil)
 	}
 	m.playGen = gen
+	m.preloadNext()
 	return m.showArt(&t)
+}
+
+// preloadNext asks the player to load the track that will play when the
+// current one ends, so the change is instant and never waits on the disk.
+func (m *Model) preloadNext() {
+	if m.playGen == 0 {
+		return
+	}
+	if next, ok := m.queue.PeekNext(m.modes, m.rng); ok {
+		m.deps.Player.Preload(next.Path)
+	}
 }
 
 // advance moves to the next track. auto is true when the previous track

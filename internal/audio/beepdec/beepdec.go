@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/gopxl/beep/v2"
 	"github.com/gopxl/beep/v2/mp3"
@@ -32,8 +31,8 @@ func readerDecode(fn func(io.Reader) (beep.StreamSeekCloser, beep.Format, error)
 }
 
 func decoder(name string, fn decodeFunc) audio.Decoder {
-	return audio.DecoderFunc(func(_ context.Context, path string) (beep.StreamSeekCloser, beep.Format, error) {
-		f, err := os.Open(path)
+	return audio.DecoderFunc(func(_ context.Context, src audio.Source) (beep.StreamSeekCloser, beep.Format, error) {
+		f, err := src.Open()
 		if err != nil {
 			return nil, beep.Format{}, fmt.Errorf("%s: %w", name, err)
 		}

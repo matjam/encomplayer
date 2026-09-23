@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -18,9 +16,8 @@ type Prober interface {
 // Duration returns the length of the track at path, using the first decoder
 // that can read it.
 func Duration(ctx context.Context, decoders *Decoders, path string) (time.Duration, error) {
-	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
 	var errs []error
-	for _, d := range decoders.Lookup(ext) {
+	for _, d := range decoders.Lookup(extOf(path)) {
 		if p, ok := d.(Prober); ok {
 			length, err := p.Probe(ctx, path)
 			if err == nil {
@@ -29,7 +26,7 @@ func Duration(ctx context.Context, decoders *Decoders, path string) (time.Durati
 			errs = append(errs, err)
 			continue
 		}
-		s, format, err := d.Decode(ctx, path)
+		s, format, err := d.Decode(ctx, FileSource(path))
 		if err != nil {
 			errs = append(errs, err)
 			continue

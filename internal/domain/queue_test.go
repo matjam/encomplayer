@@ -59,6 +59,49 @@ func TestQueueRandomAvoidsCurrent(t *testing.T) {
 	}
 }
 
+func TestPeekNextMatchesAdvance(t *testing.T) {
+	tests := []struct {
+		name   string
+		modes  Modes
+		edit   func(q *Queue[string])
+		wantOK bool
+	}{
+		{name: "sequential", wantOK: true},
+		{name: "random", modes: Modes{Random: true}, wantOK: true},
+		{name: "random with consume", modes: Modes{Random: true, Consume: true}, wantOK: true},
+		{name: "single stops", modes: Modes{Single: true}, wantOK: false},
+		{name: "single repeat replays", modes: Modes{Single: true, Repeat: true}, wantOK: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := rand.New(rand.NewPCG(9, 9))
+			for range 30 {
+				q := NewQueue("a", "b", "c", "d", "e", "f")
+				q.SetCurrent(2)
+				peek, ok := q.PeekNext(tc.modes, r)
+				if ok != tc.wantOK {
+					t.Fatalf("PeekNext ok = %v, want %v", ok, tc.wantOK)
+				}
+				got, _ := q.Advance(tc.modes, true, r)
+				if ok && got != peek {
+					t.Fatalf("Advance played %q, PeekNext promised %q", got, peek)
+				}
+			}
+		})
+	}
+}
+
+func TestQueueEditDropsRandomPlan(t *testing.T) {
+	q := NewQueue("a", "b", "c")
+	q.SetCurrent(0)
+	r := rand.New(rand.NewPCG(1, 1))
+	q.PeekNext(Modes{Random: true}, r)
+	q.Remove(1)
+	if q.planned != -1 {
+		t.Error("Remove kept a stale random plan")
+	}
+}
+
 func TestQueueRetreat(t *testing.T) {
 	tests := []struct {
 		name    string

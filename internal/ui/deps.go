@@ -16,6 +16,7 @@ import (
 // Player is the playback engine the UI drives.
 type Player interface {
 	Play(ctx context.Context, path string) (uint64, error)
+	Preload(path string)
 	TogglePause()
 	Stop()
 	Seek(d time.Duration) error

@@ -46,7 +46,13 @@ func TestDecodeFormats(t *testing.T) {
 				t.Errorf("length = %v, want about 2s", length)
 			}
 
-			s, format, err := audio.Open(ctx, decoders, path)
+			// Decode the way the player does, from the in-memory copy.
+			// Duration above already exercised the on-disk source.
+			src, err := audio.MemorySource(path)
+			if err != nil {
+				t.Fatalf("MemorySource: %v", err)
+			}
+			s, format, err := audio.Open(ctx, decoders, src)
 			if err != nil {
 				t.Fatalf("Open: %v", err)
 			}

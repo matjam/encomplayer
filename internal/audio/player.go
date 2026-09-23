@@ -22,11 +22,22 @@ const (
 	Paused
 )
 
-// outputRate is the device sample rate. Tracks at other rates are resampled.
-const outputRate = beep.SampleRate(44100)
+const (
+	// outputRate is the device sample rate. Tracks at other rates are
+	// resampled.
+	outputRate = beep.SampleRate(44100)
+
+	// outputBuffer is the device buffer. It only has to absorb CPU hiccups,
+	// because tracks decode from memory rather than disk or network.
+	outputBuffer = 100 * time.Millisecond
+)
 
 // Player plays one track at a time. It owns beep's process-wide speaker, so a
 // program must create at most one.
+//
+// Tracks are read into memory in the background as they play, and the next
+// track can be preloaded, so a slow disk or network share never stalls the
+// audio callback.
 //
 // Lock order is p.mu, then speaker.Lock. The end-of-track callback runs under
 // the speaker lock and only does a non-blocking channel send, so it never
@@ -34,9 +45,11 @@ const outputRate = beep.SampleRate(44100)
 type Player struct {
 	decoders *Decoders
 	ended    chan uint64
+	cache    *trackCache
 
 	mu       sync.Mutex
 	stream   beep.StreamSeekCloser
+	path     string
 	format   beep.Format
 	ctrl     *beep.Ctrl
 	volume   *effects.Volume
@@ -48,12 +61,13 @@ type Player struct {
 
 // NewPlayer opens the audio device.
 func NewPlayer(decoders *Decoders, volume int) (*Player, error) {
-	if err := speaker.Init(outputRate, outputRate.N(time.Second/20)); err != nil {
+	if err := speaker.Init(outputRate, outputRate.N(outputBuffer)); err != nil {
 		return nil, fmt.Errorf("open audio device: %w", err)
 	}
 	return &Player{
 		decoders: decoders,
 		ended:    make(chan uint64, 4),
+		cache:    newTrackCache(),
 		percent:  clampPercent(volume),
 	}, nil
 }
@@ -64,8 +78,10 @@ func (p *Player) Ended() <-chan uint64 { return p.ended }
 // Play stops the current track and starts path. It returns the generation
 // that identifies this playback in Ended.
 func (p *Player) Play(ctx context.Context, path string) (uint64, error) {
-	stream, format, err := Open(ctx, p.decoders, path)
+	p.cache.keep(path)
+	stream, format, err := Open(ctx, p.decoders, p.source(path))
 	if err != nil {
+		p.cache.keep()
 		return 0, err
 	}
 
@@ -91,10 +107,38 @@ func (p *Player) Play(ctx context.Context, path string) (uint64, error) {
 	p.volume = &effects.Volume{Streamer: p.ctrl, Base: 2}
 	p.applyVolumeLocked()
 	p.analyzer = NewAnalyzer(p.volume, outputRate)
-	p.stream, p.format, p.state = stream, format, Playing
+	p.stream, p.format, p.state, p.path = stream, format, Playing, path
 
 	speaker.Play(p.analyzer)
 	return gen, nil
+}
+
+// Preload starts reading path into memory so it can start instantly and play
+// without touching the disk. Only the playing track and the most recent
+// preload are kept.
+func (p *Player) Preload(path string) {
+	if !readsInProcess(p.decoders, path) || p.cache.has(path) {
+		return
+	}
+	p.mu.Lock()
+	current := p.path
+	p.mu.Unlock()
+
+	p.cache.keep(current, path)
+	// A failed preload is retried, and reported, when the track plays.
+	_, _ = p.cache.get(path)
+}
+
+// source returns path backed by memory when a decoder can use it.
+func (p *Player) source(path string) Source {
+	src := FileSource(path)
+	if !readsInProcess(p.decoders, path) {
+		return src
+	}
+	if f, err := p.cache.get(path); err == nil {
+		src.Open = f.open
+	}
+	return src
 }
 
 // TogglePause pauses or resumes playback.
@@ -115,11 +159,12 @@ func (p *Player) TogglePause() {
 	}
 }
 
-// Stop halts playback and releases the track.
+// Stop halts playback and releases the track and any preload.
 func (p *Player) Stop() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.stopLocked()
+	p.cache.keep()
 }
 
 // Seek moves the play position by d, clamped to the track.
@@ -208,7 +253,7 @@ func (p *Player) stopLocked() {
 		_ = p.stream.Close()
 	}
 	p.stream, p.ctrl, p.volume, p.analyzer = nil, nil, nil, nil
-	p.state = Stopped
+	p.state, p.path = Stopped, ""
 }
 
 // applyVolumeLocked maps the percentage onto a squared gain curve, which

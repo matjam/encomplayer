@@ -62,16 +62,16 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 		}
 	case keymap.ToggleRepeat:
 		m.modes.Repeat = !m.modes.Repeat
-		m.saveState()
+		m.modesChanged()
 	case keymap.ToggleRandom:
 		m.modes.Random = !m.modes.Random
-		m.saveState()
+		m.modesChanged()
 	case keymap.ToggleConsume:
 		m.modes.Consume = !m.modes.Consume
-		m.saveState()
+		m.modesChanged()
 	case keymap.ToggleSingle:
 		m.modes.Single = !m.modes.Single
-		m.saveState()
+		m.modesChanged()
 	case keymap.TogglePause:
 		return m.togglePause()
 	case keymap.Stop:
@@ -113,6 +113,12 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 		m.resolver.Reset()
 	}
 	return nil
+}
+
+// modesChanged persists the modes and preloads whatever now plays next.
+func (m *Model) modesChanged() {
+	m.preloadNext()
+	m.saveState()
 }
 
 func (m *Model) seek(d time.Duration) {
