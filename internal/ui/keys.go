@@ -104,6 +104,8 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 		return m.rescan(true)
 	case keymap.AddRandom:
 		m.addRandom(10)
+	case keymap.ShowConfig:
+		m.modal = newConfigModal(m)
 	case keymap.ShuffleAll:
 		return m.playShuffled(m.allTracks())
 	case keymap.EnterSearch:

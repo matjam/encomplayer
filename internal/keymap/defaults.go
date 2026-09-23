@@ -1,8 +1,9 @@
 package keymap
 
 // Default bindings, copied from rmpc's default config. MPD-only actions
-// (outputs, decoders, partitions, downloads, ratings) are omitted. "S" and
-// navigation "X" are EncomPlayer additions on keys rmpc leaves free.
+// (outputs, decoders, partitions, downloads, ratings) are omitted. "S",
+// "oc" and navigation "X" are EncomPlayer additions on keys rmpc leaves
+// free; "oc" joins rmpc's o-prefixed "show" family.
 var defaultBindings = map[Context]map[string]string{
 	Global: {
 		"q":       Quit,
@@ -37,6 +38,7 @@ var defaultBindings = map[Context]map[string]string{
 		"<C-U>":   Rescan,
 		"R":       AddRandom,
 		"S":       ShuffleAll,
+		"oc":      ShowConfig,
 	},
 	Navigation: {
 		"<C-c>":      Close,
