@@ -10,6 +10,10 @@ encomplayer [--art auto|kitty|iterm|blocks|off] [--config path] [music-dir]
 The music folder comes from the argument, then `music_dir` in the config, then
 `~/Music`.
 
+## Screnshot
+
+<img width="1274" height="892" alt="image" src="https://github.com/user-attachments/assets/c0e1891d-1e01-411b-b4e7-c0aa993a7fbf" />
+
 ## Features
 
 - Plays MP3, FLAC, Ogg Vorbis and WAV in pure Go. With ffmpeg installed it also
