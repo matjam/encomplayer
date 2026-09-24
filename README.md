@@ -68,7 +68,7 @@ so install it yourself there.
 go install github.com/matjam/encomplayer/cmd/encomplayer@latest
 ```
 
-## Screnshot
+## Screenshot
 
 <img width="1274" height="892" alt="image" src="https://github.com/user-attachments/assets/c0e1891d-1e01-411b-b4e7-c0aa993a7fbf" />
 
