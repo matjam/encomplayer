@@ -2,12 +2,6 @@
 
 package main
 
-import "errors"
-
-// notifyReload is a no-op where there is no SIGUSR1; :reload covers it.
+// notifyReload is a no-op where there is no SIGUSR1; the reload command
+// reaches the player over the control socket instead.
 func notifyReload(func()) func() { return func() {} }
-
-// signalReload is unavailable without SIGUSR1.
-func signalReload(string) (int, error) {
-	return 0, errors.New("--reload needs SIGUSR1, which this platform lacks; use :reload inside the player")
-}

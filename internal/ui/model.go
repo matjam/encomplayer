@@ -221,6 +221,13 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 	case ReloadMsg:
 		return m.reload()
 
+	case RemoteMsg:
+		return m.handleRemote(msg)
+
+	case NoticeMsg:
+		m.status.errorf("%s", msg.Text)
+		return nil
+
 	case tea.KeyPressMsg:
 		return m.handleKey(msg)
 
