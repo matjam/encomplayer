@@ -4,11 +4,17 @@ A terminal music player styled after ENCOM OS-12 from *TRON: Legacy*, with
 rmpc's keybindings. No MPD required.
 
 ```
-encomplayer [--art auto|kitty|iterm|blocks|off] [--config path] [music-dir]
+encomplayer [options] [music-folder]
+
+  -a, --art string      album art protocol for this run: auto, kitty, iterm, blocks or off
+  -c, --config string   config file (default ~/.config/encomplayer/config.json)
+  -h, --help            show help and exit
+  -v, --version         print the version and exit
 ```
 
 The music folder comes from the argument, then `music_dir` in the config, then
-`~/Music`.
+`~/Music`. On a terminal, `--version` shows a diagnostics banner (terminal,
+colour depth, album art protocol, decoders); piped, it prints one plain line.
 
 ## Install
 

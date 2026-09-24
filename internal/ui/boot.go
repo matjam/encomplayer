@@ -57,6 +57,19 @@ var logo = [][]string{
 	{"███╗   ███╗", "████╗ ████║", "██╔████╔██║", "██║╚██╔╝██║", "██║ ╚═╝ ██║", "╚═╝     ╚═╝"},
 }
 
+// Logo returns the ENCOM wordmark, one string per row.
+func Logo() []string {
+	rows := make([]string, len(logo[0]))
+	for r := range rows {
+		var b strings.Builder
+		for _, letter := range logo {
+			b.WriteString(letter[r])
+		}
+		rows[r] = b.String()
+	}
+	return rows
+}
+
 // bootScript lines print one per tick. Values are filled in from the model.
 var bootScript = []struct{ label, value string }{
 	{"ENCOM OS-12 · KERNEL 12.0.4-GRID", ""},
@@ -75,12 +88,8 @@ var bootScript = []struct{ label, value string }{
 func (m *Model) bootView() string {
 	st := m.st
 	var out []string
-	for row := range len(logo[0]) {
-		var b strings.Builder
-		for _, letter := range logo {
-			b.WriteString(letter[row])
-		}
-		out = append(out, st.text.Render(b.String()))
+	for _, row := range Logo() {
+		out = append(out, st.text.Render(row))
 	}
 	out = append(out, "", st.dim.Render(strings.Repeat("━", 46)), "")
 
