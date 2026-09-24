@@ -35,46 +35,29 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
 
-  binaries:
+  # GoReleaser builds archives, SHA256SUMS, deb/rpm/Arch packages and the
+  # Homebrew cask from the tag release-please just created, and attaches
+  # them to that release without touching its notes.
+  goreleaser:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    strategy:
-      matrix:
-        include:
-          - { goos: linux, goarch: amd64 }
-          - { goos: linux, goarch: arm64 }
-          - { goos: darwin, goarch: amd64 }
-          - { goos: darwin, goarch: arm64 }
-          - { goos: windows, goarch: amd64 }
-          - { goos: windows, goarch: arm64 }
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      TAG: ${{ needs.release-please.outputs.tag_name }}
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - name: Build and upload
-        run: gh release upload "$TAG" "$(.github/scripts/build.sh ${{ matrix.goos }} ${{ matrix.goarch }} "$TAG")" --clobber
-
-  checksums:
-    needs: [release-please, binaries]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      TAG: ${{ needs.release-please.outputs.tag_name }}
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Publish SHA256SUMS
-        run: |
-          mkdir assets && cd assets
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'encomplayer_*'
-          sha256sum encomplayer_* > SHA256SUMS
-          gh release upload "$TAG" SHA256SUMS --repo "$GITHUB_REPOSITORY" --clobber
+          cache: false
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          distribution: goreleaser
+          version: v2.18.2
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

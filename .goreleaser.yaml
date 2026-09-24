@@ -1,0 +1,94 @@
+# GoReleaser builds every release artifact: archives, checksums, Linux
+# packages and the Homebrew cask. release-please owns versions and tags and
+# writes the release notes; GoReleaser runs on the tag it creates and only
+# adds files to that release.
+version: 2
+
+project_name: encomplayer
+
+builds:
+  - id: encomplayer
+    main: ./cmd/encomplayer
+    binary: encomplayer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{ .Tag }}
+
+archives:
+  - id: encomplayer
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [README.md, LICENSE]
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+nfpms:
+  - id: packages
+    package_name: encomplayer
+    # ConventionalFileName can contain "~", which GitHub rewrites to "."
+    # and so breaks checksums; release versions never include one.
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm, archlinux]
+    vendor: matjam
+    homepage: https://github.com/matjam/encomplayer
+    maintainer: matjam <matjam@users.noreply.github.com>
+    description: Terminal music player styled after ENCOM OS-12 from TRON Legacy, with rmpc keybindings.
+    license: MIT
+    section: sound
+    # ffmpeg adds AAC, ALAC, Opus, WavPack and more; MP3, FLAC, Ogg and WAV
+    # play without it, so it is suggested rather than required. nfpm has no
+    # Arch optdepends, so the Arch package says nothing about it.
+    suggests: [ffmpeg]
+    overrides:
+      rpm:
+        recommends: [ffmpeg]
+    archlinux:
+      packager: matjam <matjam@users.noreply.github.com>
+    contents:
+      - src: README.md
+        dst: /usr/share/doc/encomplayer/README.md
+      - src: LICENSE
+        dst: /usr/share/licenses/encomplayer/LICENSE
+
+homebrew_casks:
+  - name: encomplayer
+    repository:
+      owner: matjam
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/matjam/encomplayer
+    description: Terminal music player styled after ENCOM OS-12, with rmpc keybindings
+    license: MIT
+    commit_author:
+      name: encomplayer-release
+      email: matjam@users.noreply.github.com
+    commit_msg_template: "encomplayer {{ .Tag }}"
+    caveats: |
+      MP3, FLAC, Ogg Vorbis and WAV play out of the box. For AAC/M4A, ALAC,
+      Opus, WavPack and other formats, install ffmpeg:
+        brew install ffmpeg
+    # The binary is not notarized with Apple, so Gatekeeper would refuse to
+    # launch it. Clear the quarantine flag Homebrew sets on download.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/encomplayer"]
+          end
+
+release:
+  mode: keep-existing
+  replace_existing_artifacts: true
+
+changelog:
+  disable: true
