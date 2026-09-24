@@ -29,6 +29,7 @@ type fakePlayer struct {
 	preloaded []string
 	seeks     []time.Duration
 	state     audio.State
+	toggles   int
 	volume    int
 	ended     chan uint64
 }
@@ -42,7 +43,15 @@ func (f *fakePlayer) Play(_ context.Context, path string, start time.Duration) (
 }
 func (f *fakePlayer) Preload(path string) { f.preloaded = append(f.preloaded, path) }
 func (f *fakePlayer) Stop()               { f.state = audio.Stopped }
-func (f *fakePlayer) TogglePause()        {}
+func (f *fakePlayer) TogglePause() {
+	f.toggles++
+	switch f.state {
+	case audio.Playing:
+		f.state = audio.Paused
+	case audio.Paused:
+		f.state = audio.Playing
+	}
+}
 func (f *fakePlayer) Seek(d time.Duration) error {
 	f.seeks = append(f.seeks, d)
 	return nil

@@ -3,98 +3,7 @@
 A terminal music player styled after ENCOM OS-12 from *TRON: Legacy*, with
 rmpc's keybindings. No MPD required.
 
-```
-encomplayer [options] [music-folder]
-
-  -a, --art string      album art protocol for this run: auto, kitty, iterm, blocks or off
-  -c, --config string   config file (default ~/.config/encomplayer/config.json)
-  -h, --help            show this help and exit
-      --list-themes     list built-in and custom themes and exit
-      --no-mouse        leave the mouse to the terminal for this run, e.g. to select text
-      --paths           print where config, themes, playlists, cache and state live, and exit
-      --reload          make the running player reread its config and theme, and exit
-  -r, --rescan          reread every file's tags at startup instead of trusting the cache
-  -s, --shuffle         start playing the whole library shuffled
-  -t, --theme string    theme for this run (see --list-themes)
-  -v, --version         print the version and exit
-```
-
-The music folder comes from the argument, then `music_dir` in the config, then
-`~/Music`.
-
-- `--art`, `--theme`, `--no-mouse`, `--shuffle` and `--rescan` apply to one
-  run and are never written to the config file.
-- `--reload` signals the running player (found through a PID file in the state
-  directory) to reapply `config.json`, including its theme. It needs `SIGUSR1`,
-  so on Windows use `:reload` inside the player.
-- On a terminal, `--version` shows a diagnostics banner and `--list-themes`
-  shows a colour swatch per theme; piped, both print plain text for scripts.
-
-## Install
-
-### Script (Linux and macOS)
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/matjam/encomplayer/main/install.sh | sh
-```
-
-Installs the latest release to `~/.local/bin` after checking it against the
-release's `SHA256SUMS`. Set `BINDIR` to install elsewhere or `VERSION` to pick
-a release, e.g. `curl -fsSL … | BINDIR=/usr/local/bin VERSION=v1.1.0 sh`.
-
-### Homebrew (macOS)
-
-```sh
-brew install --cask matjam/tap/encomplayer
-```
-
-### Debian and Ubuntu
-
-```sh
-v=1.2.0   # the release you want, without the v
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer_${v}_amd64.deb
-sudo apt install ./encomplayer_${v}_amd64.deb
-```
-
-### Fedora, RHEL and openSUSE
-
-```sh
-v=1.2.0
-sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1.x86_64.rpm
-```
-
-### Arch Linux
-
-```sh
-v=1.2.0
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
-sudo pacman -U ./encomplayer-$v-1-x86_64.pkg.tar.zst
-```
-
-Download the file first: `pacman -U <url>` insists on a detached signature
-for remote packages, and these are not signed.
-
-On ARM, use `arm64` for the `.deb` and `aarch64` for the `.rpm` and Arch
-package. Windows users can download the `.zip` from the
-[releases page](https://github.com/matjam/encomplayer/releases).
-
-### ffmpeg
-
-MP3, FLAC, Ogg Vorbis and WAV play without anything else. For AAC/M4A, ALAC,
-Opus, WavPack and other formats, install ffmpeg as well (`brew install ffmpeg`,
-`sudo apt install ffmpeg`, `sudo pacman -S ffmpeg`). The Debian and Fedora
-packages suggest it; the Arch package cannot declare optional dependencies,
-so install it yourself there.
-
-### From source
-
-```sh
-go install github.com/matjam/encomplayer/cmd/encomplayer@latest
-```
-
-## Screenshot
-
-<img width="1274" height="892" alt="image" src="https://github.com/user-attachments/assets/c0e1891d-1e01-411b-b4e7-c0aa993a7fbf" />
+<img width="1274" height="892" alt="EncomPlayer playing TRON: Legacy with album art, the queue and the spectrum analyser" src="https://github.com/user-attachments/assets/c0e1891d-1e01-411b-b4e7-c0aa993a7fbf" />
 
 ## Features
 
@@ -106,6 +15,173 @@ go install github.com/matjam/encomplayer/cmd/encomplayer@latest
   (inline images), and half-block rendering in any truecolor terminal.
 - Instant startup from a cache, background sync, and periodic rescans that
   pick up files added while it runs.
+- Control a running player from the shell, e.g. from a window manager
+  keybinding or a status bar.
+- 34 built-in themes, custom themes, and a config screen that applies changes
+  live.
+
+## Install
+
+<details>
+<summary><b>macOS and Linux: install script</b></summary>
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/matjam/encomplayer/main/install.sh | sh
+```
+
+Installs the latest release to `~/.local/bin` after checking it against the
+release's `SHA256SUMS`. Set `BINDIR` to install elsewhere or `VERSION` to pick
+a release:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/matjam/encomplayer/main/install.sh | BINDIR=/usr/local/bin VERSION=v1.2.0 sh
+```
+
+</details>
+
+<details>
+<summary><b>macOS: Homebrew</b></summary>
+
+```sh
+brew install --cask matjam/tap/encomplayer
+```
+
+</details>
+
+<details>
+<summary><b>Debian and Ubuntu</b></summary>
+
+```sh
+v=1.2.0   # the release you want, without the v
+curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer_${v}_amd64.deb
+sudo apt install ./encomplayer_${v}_amd64.deb
+```
+
+On ARM, replace `amd64` with `arm64`.
+
+</details>
+
+<details>
+<summary><b>Fedora, RHEL and openSUSE</b></summary>
+
+```sh
+v=1.2.0
+sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1.x86_64.rpm
+```
+
+On ARM, replace `x86_64` with `aarch64`.
+
+</details>
+
+<details>
+<summary><b>Arch Linux</b></summary>
+
+```sh
+v=1.2.0
+curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
+sudo pacman -U ./encomplayer-$v-1-x86_64.pkg.tar.zst
+```
+
+Download the file first, because `pacman -U <url>` requires a detached
+signature for remote packages and these are not signed. On ARM, replace
+`x86_64` with `aarch64`.
+
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+Download the `.zip` from the
+[releases page](https://github.com/matjam/encomplayer/releases) and put
+`encomplayer.exe` on your `PATH`. Remote control needs Windows 10 1803 or
+later.
+
+</details>
+
+<details>
+<summary><b>From source</b></summary>
+
+```sh
+go install github.com/matjam/encomplayer/cmd/encomplayer@latest
+```
+
+Builds with `CGO_ENABLED=0`, so no C toolchain is needed.
+
+</details>
+
+MP3, FLAC, Ogg Vorbis and WAV need nothing else. For other formats, also
+install ffmpeg (`brew install ffmpeg`, `sudo apt install ffmpeg`,
+`sudo pacman -S ffmpeg`). The Debian and Fedora packages suggest it, but the
+Arch package cannot declare optional dependencies.
+
+## Usage
+
+```
+encomplayer [options] [music-folder]    start the player
+encomplayer <command> [argument]        control the running player
+```
+
+The music folder comes from the argument, then `music_dir` in the config, then
+`~/Music`.
+
+| Option | Effect |
+|---|---|
+| `-a, --art PROTOCOL` | Album art for this run: `auto`, `kitty`, `iterm`, `blocks` or `off` |
+| `-t, --theme NAME` | Theme for this run |
+| `-s, --shuffle` | Start playing the whole library shuffled |
+| `-r, --rescan` | Reread every file's tags instead of trusting the cache |
+| `--no-mouse` | Leave the mouse to the terminal, e.g. to select text |
+| `-c, --config FILE` | Config file (default `~/.config/encomplayer/config.json`) |
+| `--list-themes` | List built-in and custom themes |
+| `--paths` | Print where config, themes, playlists, cache, state and the socket live |
+| `-v, --version` | Print the version and a diagnostics banner |
+| `-h, --help` | Show help |
+
+`--art`, `--theme`, `--no-mouse`, `--shuffle` and `--rescan` apply to one run
+and are never written to the config file. On a terminal, `--version` and
+`--list-themes` print in colour; piped, they print plain text for scripts.
+
+## Remote control
+
+With a player running, these commands control it from any shell:
+
+| Command | Effect |
+|---|---|
+| `status` | Print the current track, position, queue position, volume and modes |
+| `status --json` | The same as JSON |
+| `play`, `pause`, `toggle`, `stop` | Transport; `play` resumes a paused or stopped track |
+| `next`, `prev` | Skip forward or back in the queue |
+| `seek +N`, `seek -N` | Seek relative to the current position, in seconds |
+| `seek SECONDS`, `seek M:SS`, `seek H:MM:SS` | Seek to an absolute position |
+| `volume N` | Set the volume, 0–100 |
+| `volume +N`, `volume -N` | Step the volume |
+| `repeat`, `random`, `single`, `consume` | Toggle a mode, or pass `on` or `off` |
+| `shuffle` | Shuffle the queue |
+| `shuffle-all` | Replace the queue with the whole library, shuffled, and play it |
+| `add PATH` | Append a file or folder to the queue |
+| `reload` | Reread `config.json` and the theme |
+
+```sh
+encomplayer toggle
+encomplayer seek +30
+encomplayer volume -5
+encomplayer random on
+encomplayer add ~/Music/Daft\ Punk/TRON\ Legacy
+encomplayer status
+# ▶ Derezzed — Daft Punk  1:23 / 1:44  3/22  vol 70%  [random]
+encomplayer status --json | jq -r .title
+```
+
+Commands print nothing on success. They exit 1 with a message when the
+player rejects the command or no player is running, and 2 for a bad command
+line. A folder named like a command opens with `./name` or `-- name`.
+
+The player listens on a Unix socket in its state directory
+(`encomplayer --paths` shows where), readable only by your user. If that path
+is too long for a socket, it moves to `$XDG_RUNTIME_DIR` or the temp
+directory. Only one
+player can listen at a time. A second instance still plays but shows a notice
+that remote control is unavailable.
 
 ## Keys
 
@@ -127,13 +203,14 @@ The defaults match rmpc. Press `?` for the full list.
 | **`X`** | Queue tab: shuffle the queue. Elsewhere: play the highlighted item shuffled |
 | `d`, `D`, `J`/`K`, `C` | Queue: delete, clear, move, jump to current |
 | `C-u`, `C-U` | Sync library, full rescan (in command mode: `:update`, `:rescan`) |
+| `oc` | Config screen |
 | `:` | Command mode (`:help` lists commands) |
 
 The Playlists tab starts with **ALL MUSIC**, so `6` `X` also shuffles
 everything, and `C-s s` on it saves the library as a playlist.
 
 The queue, current track and play position survive a restart. After
-relaunching, `p` resumes the track where it stopped; choosing a track with
+relaunching, `p` resumes the track where it stopped. Choosing a track with
 `Enter` starts it from the beginning, and `s` clears the saved position.
 
 ## Mouse
@@ -148,14 +225,14 @@ relaunching, `p` resumes the track where it stopped; choosing a track with
 | Volume meter, mode flags | Set volume, toggle mode | | |
 | Help | | | Scroll |
 
-Drag a divider to resize panes: the SIGNAL strip's top edge (the spectrum
-grows with it), the border between album art and the queue, and the borders
-between browser columns. Sizes are remembered between sessions.
+Drag a divider to resize panes. The dividers are the SIGNAL strip's top edge
+(the spectrum grows with it), the border between album art and the queue, and
+the borders between browser columns. Sizes are remembered between sessions.
 
 ## Configuration
 
 Press `oc` (or `:config`) for the config screen. Its tabs cover General,
-Appearance, Mouse, Keys and Paths; `h`/`l` switch tabs, `j`/`k` pick a
+Appearance, Mouse, Keys and Paths. `h`/`l` switch tabs, `j`/`k` pick a
 setting and `Enter` edits it. Changes apply immediately and are saved.
 
 The settings live in `~/.config/encomplayer/config.json` (or
@@ -181,11 +258,9 @@ The settings live in `~/.config/encomplayer/config.json` (or
 `rescan_seconds` of 0 checks every 60 s on local disks and every 10 minutes on
 network mounts. A negative value disables periodic rescans.
 
-Playlists live in `~/.config/encomplayer/playlists`, the library cache in
-`~/.cache/encomplayer`, and the saved queue in `~/.local/state/encomplayer`.
-
-After editing the file, send `SIGUSR1` (`pkill -USR1 encomplayer`) or run
-`:reload` to apply it without restarting.
+After editing the file, apply it without restarting by running
+`encomplayer reload`, `:reload` inside the player, or
+`pkill -USR1 encomplayer`.
 
 ## Themes
 
@@ -198,7 +273,8 @@ Built in: `encom` (default), `catppuccin-latte`, `-frappe`, `-macchiato`,
 `oxocarbon` and `cyberpunk`.
 
 Pick one in the config screen, where moving through the list previews each
-theme, or with `:theme <name>`.
+theme, or with `:theme <name>`. `encomplayer --list-themes` shows a swatch of
+each.
 
 A custom theme is a JSON file in `~/.config/encomplayer/themes/`, named for
 the theme. It extends a built-in and overrides any of the colour roles:
@@ -213,10 +289,25 @@ the theme. It extends a built-in and overrides any of the colour roles:
 }
 ```
 
-Roles: `background` (empty keeps the terminal's), `text`, `bright`, `dim`,
-`grid`, `border`, `accent`, `error`, `selection`, `selection_text`. Save the
-file and send `SIGUSR1` to see the change live. A custom file with a
-built-in's name replaces that built-in.
+The roles are `background` (empty keeps the terminal's), `text`, `bright`,
+`dim`, `grid`, `border`, `accent`, `error`, `selection` and `selection_text`.
+Save the file and run `encomplayer reload` to see the change live. A custom
+file with a built-in's name replaces that built-in.
+
+## Files
+
+| What | Where |
+|---|---|
+| Config | `~/.config/encomplayer/config.json` |
+| Custom themes | `~/.config/encomplayer/themes/` |
+| Playlists | `~/.config/encomplayer/playlists/` |
+| Library cache | `~/.cache/encomplayer/` |
+| Queue, position and layout | `~/.local/state/encomplayer/` |
+| Remote control socket | `~/.local/state/encomplayer/encomplayer.sock` |
+
+These are the defaults on Linux and macOS, and they follow the `XDG_*`
+variables. Run
+`encomplayer --paths` for the locations on your system.
 
 ## Library cache
 
@@ -226,8 +317,8 @@ immediately and a sync runs in the background. The sync relists only folders
 whose modification time changed and rereads only files whose size or time
 changed, so a network library of 10,000 tracks syncs in a few seconds.
 
-A file retagged in place without its folder changing is only noticed by a full
-rescan (`C-U` or `:rescan`).
+A full rescan (`C-U`, `:rescan` or `--rescan`) is the only way to notice a
+file retagged in place when its folder did not change.
 
 ## Extending
 
@@ -239,9 +330,7 @@ rescan (`C-U` or `:rescan`).
 
 ## Building
 
-```
+```sh
 go build -o bin/encomplayer ./cmd/encomplayer
 go test ./...
 ```
-
-Builds with `CGO_ENABLED=0`.

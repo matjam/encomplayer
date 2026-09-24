@@ -1,61 +1,150 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
+	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"github.com/matjam/encomplayer/internal/config"
+	"github.com/matjam/encomplayer/internal/remote"
 	"github.com/matjam/encomplayer/internal/theme"
+	"github.com/matjam/encomplayer/internal/ui"
 )
 
-// errNotRunning means --reload found no player to signal.
-var errNotRunning = errors.New("no running encomplayer found")
+// maxSocketPath is the longest socket path every platform accepts. macOS
+// allows 104 bytes including the terminating NUL; Linux and Windows 108.
+const maxSocketPath = 103
 
-// pidPath is where a running player records its process ID for --reload.
-func pidPath(paths config.Paths) string {
-	return filepath.Join(filepath.Dir(paths.State), "encomplayer.pid")
+// socketPath is where a running player listens for control commands:
+// beside the state file, or, when that path is too long for a socket, in
+// the per-user runtime or temp directory under a name derived from the state
+// directory, so that player and client still agree on it.
+func socketPath(paths config.Paths) string {
+	dir := filepath.Dir(paths.State)
+	if p := filepath.Join(dir, "encomplayer.sock"); len(p) <= maxSocketPath {
+		return p
+	}
+	base := os.Getenv("XDG_RUNTIME_DIR")
+	if base == "" {
+		base = os.TempDir()
+	}
+	sum := sha256.Sum256([]byte(dir))
+	return filepath.Join(base, fmt.Sprintf("encomplayer-%d-%x.sock", os.Getuid(), sum[:6]))
 }
 
-// writePID records this process for --reload and returns a function that
-// removes the record if it is still ours.
-func writePID(path string) (func(), error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return func() {}, fmt.Errorf("record pid: %w", err)
-	}
-	pid := strconv.Itoa(os.Getpid())
-	if err := os.WriteFile(path, []byte(pid+"\n"), 0o644); err != nil {
-		return func() {}, fmt.Errorf("record pid: %w", err)
-	}
-	return func() {
-		// A newer player may have taken the file over; leave its record.
-		if data, err := os.ReadFile(path); err == nil && strings.TrimSpace(string(data)) == pid {
-			_ = os.Remove(path)
+// serveRemote lets `encomplayer <command>` reach this player. Each request
+// becomes a ui.RemoteMsg handled in the event loop, so it runs exactly like
+// the matching key. Remote control is optional: if the socket cannot be
+// claimed the player still runs, and says why in its status line.
+func serveRemote(sock string, program *tea.Program) func() {
+	server, err := remote.Listen(sock, func(req remote.Request) remote.Response {
+		reply := make(chan remote.Response, 1)
+		program.Send(ui.RemoteMsg{Req: req, Reply: reply})
+		select {
+		case resp := <-reply:
+			return resp
+		case <-time.After(5 * time.Second):
+			return remote.Response{Error: "the player did not respond"}
 		}
-	}, nil
+	})
+	if err != nil {
+		go program.Send(ui.NoticeMsg{Text: "remote control unavailable: " + err.Error()})
+		return func() {}
+	}
+	go server.Serve()
+	return func() {
+		// Nothing to recover if the socket file is already gone.
+		_ = server.Close()
+	}
 }
 
-// readPID returns the process ID a running player recorded.
-func readPID(path string) (int, error) {
-	data, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return 0, errNotRunning
+// runControl sends a command to the running player and prints the result.
+func runControl(w io.Writer, sock string, opts options) error {
+	args := opts.commandArgs
+	if opts.command == "add" {
+		// The player may run in another directory, so send an absolute
+		// path.
+		abs, err := filepath.Abs(args[0])
+		if err != nil {
+			return fmt.Errorf("add: %w", err)
+		}
+		args = []string{abs}
 	}
-	if err != nil {
-		return 0, fmt.Errorf("read %s: %w", path, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	resp, err := remote.Send(ctx, sock, remote.Request{Cmd: opts.command, Args: args})
+	switch {
+	case errors.Is(err, remote.ErrNotRunning):
+		return fmt.Errorf("%w (start one with: encomplayer)", err)
+	case err != nil:
+		return err
+	case !resp.OK:
+		return errors.New(resp.Error)
 	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil || pid <= 0 {
-		return 0, fmt.Errorf("%s does not hold a process ID", path)
+
+	if opts.command != "status" {
+		return nil
 	}
-	return pid, nil
+	if opts.json {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(resp.Status)
+	}
+	fmt.Fprintln(w, formatStatus(resp.Status))
+	return nil
+}
+
+// formatStatus renders status as one line, short enough for a tmux or
+// shell prompt.
+func formatStatus(s *remote.Status) string {
+	icon := map[string]string{"playing": "▶", "paused": "❚❚", "stopped": "■"}[s.State]
+	if s.Title == "" {
+		return icon + " stopped · queue empty"
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s %s", icon, s.Title)
+	if s.Artist != "" {
+		fmt.Fprintf(&b, " — %s", s.Artist)
+	}
+	if s.Album != "" {
+		fmt.Fprintf(&b, " · %s", s.Album)
+	}
+	fmt.Fprintf(&b, "  %s / %s", clockSecs(s.Position), clockSecs(s.Duration))
+	fmt.Fprintf(&b, "  %d/%d  vol %d%%", s.QueueIndex+1, s.QueueLength, s.Volume)
+
+	var modes []string
+	for _, m := range []struct {
+		on   bool
+		name string
+	}{{s.Repeat, "repeat"}, {s.Random, "random"}, {s.Single, "single"}, {s.Consume, "consume"}} {
+		if m.on {
+			modes = append(modes, m.name)
+		}
+	}
+	if len(modes) > 0 {
+		fmt.Fprintf(&b, "  [%s]", strings.Join(modes, " "))
+	}
+	return b.String()
+}
+
+func clockSecs(secs float64) string {
+	s := int(secs)
+	if s >= 3600 {
+		return fmt.Sprintf("%d:%02d:%02d", s/3600, s/60%60, s%60)
+	}
+	return fmt.Sprintf("%d:%02d", s/60, s%60)
 }
 
 // printPaths lists the files EncomPlayer reads and writes.
@@ -66,7 +155,7 @@ func printPaths(w io.Writer, paths config.Paths) {
 		{"playlists", paths.Playlists},
 		{"cache", paths.Cache},
 		{"state", paths.State},
-		{"pid", pidPath(paths)},
+		{"socket", socketPath(paths)},
 	}
 	for _, r := range rows {
 		fmt.Fprintf(w, "%-10s %s\n", r[0], r[1])

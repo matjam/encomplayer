@@ -84,13 +84,8 @@ func run(args []string) error {
 		}
 		printThemes(os.Stdout, tty, theme.NewStore(paths.Themes), current)
 		return nil
-	case opts.reload:
-		pid, err := signalReload(pidPath(paths))
-		if err != nil {
-			return err
-		}
-		fmt.Printf("reload sent to encomplayer (pid %d)\n", pid)
-		return nil
+	case opts.command != "":
+		return runControl(os.Stdout, socketPath(paths), opts)
 	}
 	if err != nil {
 		return err
@@ -175,11 +170,8 @@ func run(args []string) error {
 	stopReload := notifyReload(func() { program.Send(ui.ReloadMsg{}) })
 	defer stopReload()
 
-	// --reload finds the player through this file. Without it only
-	// --reload is lost, so a failure is not fatal.
-	if removePID, err := writePID(pidPath(paths)); err == nil {
-		defer removePID()
-	}
+	stopRemote := serveRemote(socketPath(paths), program)
+	defer stopRemote()
 
 	if _, err := program.Run(); err != nil && !errors.Is(err, tea.ErrProgramKilled) {
 		return fmt.Errorf("run ui: %w", err)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -31,7 +32,20 @@ func TestParseArgs(t *testing.T) {
 		{name: "run switches bundle", args: []string{"-sr", "--no-mouse", "-t", "nord"}, want: options{config: def, shuffle: true, rescan: true, noMouse: true, theme: "nord"}},
 		{name: "list themes", args: []string{"--list-themes"}, want: options{config: def, listThemes: true}},
 		{name: "paths", args: []string{"--paths"}, want: options{config: def, paths: true}},
-		{name: "reload", args: []string{"--reload"}, want: options{config: def, reload: true}},
+		{name: "--reload is the reload command", args: []string{"--reload"}, want: options{config: def, command: "reload"}},
+		{name: "bare command", args: []string{"next"}, want: options{config: def, command: "next"}},
+		{name: "negative seek is not a flag", args: []string{"seek", "-30"}, want: options{config: def, command: "seek", commandArgs: []string{"-30"}}},
+		{name: "status --json after command", args: []string{"status", "--json"}, want: options{config: def, command: "status", json: true}},
+		{name: "--json before command", args: []string{"--json", "status"}, want: options{config: def, command: "status", json: true}},
+		{name: "mode with argument", args: []string{"repeat", "on"}, want: options{config: def, command: "repeat", commandArgs: []string{"on"}}},
+		{name: "theme value named like a command", args: []string{"-t", "next", "/music"}, want: options{config: def, theme: "next", musicDir: "/music"}},
+		{name: "-- makes a folder of a command name", args: []string{"--", "next"}, want: options{config: def, musicDir: "next"}},
+		{name: "relative folder named like a command", args: []string{"./next"}, want: options{config: def, musicDir: "./next"}},
+		{name: "seek needs an argument", args: []string{"seek"}, wantUsage: true},
+		{name: "next takes none", args: []string{"next", "now"}, wantUsage: true},
+		{name: "json only for status", args: []string{"next", "--json"}, wantUsage: true},
+		{name: "start option with command", args: []string{"-s", "next"}, wantUsage: true},
+		{name: "command with --version", args: []string{"--version", "next"}, wantUsage: true},
 		{name: "two commands conflict", args: []string{"--version", "--paths"}, wantUsage: true},
 		{name: "unknown flag", args: []string{"-x"}, wantUsage: true},
 		{name: "unknown single-dash long flag", args: []string{"-verbose"}, wantUsage: true},
@@ -50,7 +64,7 @@ func TestParseArgs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parseArgs(%q): %v", tc.args, err)
 			}
-			if got != tc.want {
+			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("parseArgs(%q) = %+v, want %+v", tc.args, got, tc.want)
 			}
 		})
