@@ -44,7 +44,9 @@ real terminal and exercise the change.
 | `internal/collection` | Generic `List[T]`, `Browser[T]`, `GroupBy`. |
 | `internal/registry` | Generic `Registry[T]` for pluggable implementations. |
 | `internal/keymap` | rmpc notation parser, action names, chord resolver. |
-| `internal/audio` | Decoder port, player, spectrum analyser. |
+| `internal/audio` | Decoder port, player, and the sample tap visualizers read. |
+| `internal/viz` | Visualizer port: `Frame` (audio analysis), `Canvas` (cells, half-block pixels, braille dots), `Catalog` and `Source`. |
+| `internal/viz/builtin` | One file per built-in visualizer, each registering itself from `init`. |
 | `internal/audio/beepdec`, `ffmpegdec` | Decoder adapters. |
 | `internal/library` | Scanner, incremental cache, tag reader chain, search. |
 | `internal/library/ffprobe` | Fallback tag reader. |
@@ -59,7 +61,11 @@ real terminal and exercise the change.
 - Ports and adapters. Interfaces live in the consuming package; adapters
   depend on ports, never the reverse.
 - Extend through the registries: `audio.Decoder` per extension,
-  `library.TagReader` in the tagger chain, `art.Renderer` per protocol.
+  `library.TagReader` in the tagger chain, `art.Renderer` per protocol,
+  `viz.Register` per visualizer. Run-time visualizers (scripts) plug in as
+  a `viz.Source`.
+- Visualizers must stay cheap: check `go test -bench . ./internal/viz/builtin`
+  and keep a 200×50 frame well under 2 ms.
 - Keep `CGO_ENABLED=0`. Every release binary is a static cross-compile from
   Linux; a cgo dependency breaks that.
 - Keybinding defaults follow rmpc. EncomPlayer-only actions go on keys rmpc

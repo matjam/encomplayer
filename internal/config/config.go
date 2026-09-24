@@ -41,6 +41,13 @@ type Config struct {
 	// value turns periodic rescans off.
 	RescanSeconds int `json:"rescan_seconds"`
 
+	// Visualizer names the visualiser in the SIGNAL strip and full-screen
+	// view.
+	Visualizer string `json:"visualizer"`
+
+	// VisualizerFPS is how often visualisers redraw while music plays.
+	VisualizerFPS int `json:"visualizer_fps"`
+
 	// Keybinds overrides bindings per context (global, navigation, queue)
 	// using rmpc notation, e.g. {"global": {"<C-p>": "TogglePause"}}.
 	Keybinds map[string]map[string]string `json:"keybinds"`
@@ -49,12 +56,14 @@ type Config struct {
 // Default returns the built-in settings.
 func Default() Config {
 	return Config{
-		AlbumArt:     "auto",
-		Theme:        "encom",
-		VolumeStep:   5,
-		SeekSeconds:  5,
-		EnableMouse:  true,
-		ScrollAmount: 1,
+		AlbumArt:      "auto",
+		Theme:         "encom",
+		VolumeStep:    5,
+		SeekSeconds:   5,
+		EnableMouse:   true,
+		ScrollAmount:  1,
+		Visualizer:    "spectrum",
+		VisualizerFPS: 30,
 	}
 }
 

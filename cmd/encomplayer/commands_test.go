@@ -15,6 +15,7 @@ import (
 	"github.com/matjam/encomplayer/internal/remote"
 	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // The CLI validates arguments itself for clear errors, so its command list
@@ -145,6 +146,23 @@ func TestSocketPath(t *testing.T) {
 	}
 	if other := socketPath(config.Paths{State: deep + "x/state.json"}); other == a {
 		t.Error("different state dirs share a socket")
+	}
+}
+
+func TestPrintVisualizers(t *testing.T) {
+	infos := []viz.Info{{Name: "fire", Description: "flames"}, {Name: "spectrum", Description: "bars"}}
+
+	var plain bytes.Buffer
+	printVisualizers(&plain, false, infos, "spectrum")
+	if plain.String() != "fire\nspectrum\n" {
+		t.Errorf("piped list = %q", plain.String())
+	}
+
+	var fancy bytes.Buffer
+	printVisualizers(&fancy, true, infos, "spectrum")
+	want := "  fire      flames\n▶ spectrum  bars\n"
+	if fancy.String() != want {
+		t.Errorf("terminal list = %q, want %q", fancy.String(), want)
 	}
 }
 

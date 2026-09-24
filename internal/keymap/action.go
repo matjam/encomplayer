@@ -104,4 +104,8 @@ const (
 	ShuffleAll  = "ShuffleAll"
 	ShufflePlay = "ShufflePlay"
 	ShowConfig  = "ShowConfig"
+
+	ToggleVisualizer   = "ToggleVisualizer"
+	NextVisualizer     = "NextVisualizer"
+	PreviousVisualizer = "PreviousVisualizer"
 )

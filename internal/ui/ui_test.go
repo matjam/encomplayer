@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"math"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -62,11 +63,20 @@ func (f *fakePlayer) Progress() (time.Duration, time.Duration) {
 	}
 	return f.pos, 3 * time.Minute
 }
-func (f *fakePlayer) SetVolume(v int)          { f.volume = max(0, min(v, 100)) }
-func (f *fakePlayer) Volume() int              { return f.volume }
-func (f *fakePlayer) State() audio.State       { return f.state }
-func (f *fakePlayer) Spectrum(n int) []float64 { return make([]float64, n) }
-func (f *fakePlayer) Ended() <-chan uint64     { return f.ended }
+func (f *fakePlayer) SetVolume(v int)    { f.volume = max(0, min(v, 100)) }
+func (f *fakePlayer) Volume() int        { return f.volume }
+func (f *fakePlayer) State() audio.State { return f.state }
+func (f *fakePlayer) Samples() ([]float64, []float64, int) {
+	if f.state != audio.Playing {
+		return nil, nil, 44100
+	}
+	s := make([]float64, 2048)
+	for i := range s {
+		s[i] = 0.5 * math.Sin(float64(i)/10)
+	}
+	return s, s, 44100
+}
+func (f *fakePlayer) Ended() <-chan uint64 { return f.ended }
 
 func testTracks(root string) []domain.Track {
 	mk := func(rel, title, artist, album, genre string, n int) domain.Track {

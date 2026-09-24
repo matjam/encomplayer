@@ -15,12 +15,11 @@ import (
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 const (
-	tickInterval = 100 * time.Millisecond
 	chordTimeout = time.Second
-	spectrumBars = 64
 
 	// positionSaveEvery bounds how much listening a crash can lose from
 	// the saved resume position.
@@ -74,8 +73,8 @@ type Model struct {
 	mouse    mouseState
 	sizes    config.Layout
 	st       *styles
+	viz      vizState
 
-	spectrum []float64
 	position time.Duration
 	length   time.Duration
 }
@@ -90,7 +89,7 @@ func New(ctx context.Context, deps Deps) *Model {
 		queueList: collection.NewList[domain.Track](nil),
 		modes:     deps.State.Modes,
 		resolver:  keymap.NewResolver(deps.Keymap),
-		spectrum:  make([]float64, spectrumBars),
+		viz:       newVizState(deps.State.VisualizerFull),
 		sizes:     deps.State.Layout,
 	}
 	if m.sizes == (config.Layout{}) {
@@ -103,6 +102,10 @@ func New(ctx context.Context, deps Deps) *Model {
 	m.pendingShuffle = deps.Startup.Shuffle
 	if err := m.applyTheme(startTheme); err != nil {
 		m.status.errorf("%v", err)
+	}
+	if err := m.selectViz(deps.Config.Visualizer); err != nil {
+		m.status.errorf("%v", err)
+		_ = m.selectViz(viz.Default)
 	}
 	deps.Player.SetVolume(deps.State.Volume)
 
@@ -122,7 +125,7 @@ func New(ctx context.Context, deps Deps) *Model {
 
 // Init starts the boot sequence, the first scan and the background loops.
 func (m *Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize}
+	cmds := []tea.Cmd{m.tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize}
 	if m.deps.MusicDir != "" {
 		cmds = append(cmds, m.loadCache(m.deps.MusicDir))
 	} else {
@@ -132,10 +135,6 @@ func (m *Model) Init() tea.Cmd {
 }
 
 type tickMsg struct{}
-
-func tick() tea.Cmd {
-	return tea.Tick(tickInterval, func(time.Time) tea.Msg { return tickMsg{} })
-}
 
 type endedMsg uint64
 
@@ -161,6 +160,7 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.layout()
+		m.renderViz(time.Now())
 		return m.refreshArt()
 
 	case tickMsg:
@@ -171,9 +171,9 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 		if m.deps.Player.State() == audio.Playing && time.Since(m.lastSaved) >= positionSaveEvery {
 			m.saveState()
 		}
-		m.spectrum = smooth(m.spectrum, m.deps.Player.Spectrum(spectrumBars))
+		m.renderViz(time.Now())
 		m.status.expire()
-		return tick()
+		return m.tick()
 
 	case bootTickMsg:
 		return m.boot.advance()
@@ -212,7 +212,7 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 		return m.placeArt(msg)
 
 	case keyTimeoutMsg:
-		res := m.resolver.Flush(uint64(msg), m.tabs[m.active].contexts()...)
+		res := m.resolver.Flush(uint64(msg), m.contexts()...)
 		if res.Matched {
 			return m.dispatch(res.Action)
 		}
@@ -240,14 +240,23 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 // layout pushes the current body size into every tab.
 func (m *Model) layout() {
 	m.clampLayout()
-	h := m.bodyHeight()
+	h := m.tabBodyHeight()
 	for _, t := range m.tabs {
 		t.resize(m, m.width, h)
 	}
 }
 
+// bodyHeight is the height of whatever fills the middle of the screen: the
+// active tab, or the visualiser when it is full screen.
 func (m *Model) bodyHeight() int {
-	return max(3, m.height-headerRows-tabRows-m.footerRows()-statusRows)
+	return max(3, m.height-m.bodyTop()-m.footerRows()-statusRows)
+}
+
+// tabBodyHeight is the tab body's height in the normal layout. Tabs and
+// album art keep this size while the visualiser fills the screen, so they
+// are ready when it closes.
+func (m *Model) tabBodyHeight() int {
+	return max(3, m.height-tabBodyTop-m.sizes.FooterRows-statusRows)
 }
 
 // syncQueue refreshes the queue list after the queue changes.
@@ -267,6 +276,7 @@ func (m *Model) saveState() {
 		Tab:             m.tabs[m.active].title(),
 		Layout:          m.sizes,
 		PositionSeconds: m.resumePosition().Seconds(),
+		VisualizerFull:  m.viz.full,
 	}
 	m.lastSaved = time.Now()
 	if err := config.SaveState(m.deps.Paths.State, st); err != nil {
@@ -292,17 +302,4 @@ func (m *Model) switchTo(name string) {
 			return
 		}
 	}
-}
-
-// smooth lets bars fall gradually instead of flickering.
-func smooth(prev, next []float64) []float64 {
-	out := make([]float64, len(next))
-	for i := range next {
-		p := 0.0
-		if i < len(prev) {
-			p = prev[i]
-		}
-		out[i] = max(next[i], p*0.75)
-	}
-	return out
 }

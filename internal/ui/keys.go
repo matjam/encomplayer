@@ -26,11 +26,11 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return cmd
 	}
-	if t := m.tabs[m.active]; t.captures() {
+	if t := m.tabs[m.active]; t.captures() && !m.viz.full {
 		return t.key(m, msg)
 	}
 
-	res := m.resolver.Feed(msg.String(), m.tabs[m.active].contexts()...)
+	res := m.resolver.Feed(msg.String(), m.contexts()...)
 	switch {
 	case res.Pending:
 		gen := res.Generation
@@ -41,9 +41,27 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 	return nil
 }
 
+// contexts are the keymap contexts in force. The full-screen visualiser
+// hides the tabs, so only global keys and Esc apply.
+func (m *Model) contexts() []keymap.Context {
+	if m.viz.full {
+		return []keymap.Context{keymap.Navigation, keymap.Global}
+	}
+	return m.tabs[m.active].contexts()
+}
+
 // dispatch offers an action to the active tab, then handles it globally.
 func (m *Model) dispatch(a keymap.Action) tea.Cmd {
-	if handled, cmd := m.tabs[m.active].handle(m, a); handled {
+	if m.viz.full {
+		switch a.Name {
+		case keymap.Close:
+			return m.setVizFull(false)
+		case keymap.NextTab, keymap.PreviousTab, keymap.SwitchToTab:
+			// Choosing a tab means leaving the visualiser for it.
+			cmd := m.setVizFull(false)
+			return tea.Batch(cmd, m.dispatch(a))
+		}
+	} else if handled, cmd := m.tabs[m.active].handle(m, a); handled {
 		return cmd
 	}
 
@@ -106,6 +124,12 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 		m.addRandom(10)
 	case keymap.ShowConfig:
 		m.modal = newConfigModal(m)
+	case keymap.ToggleVisualizer:
+		return m.setVizFull(!m.viz.full)
+	case keymap.NextVisualizer:
+		return m.stepViz(1)
+	case keymap.PreviousVisualizer:
+		return m.stepViz(-1)
 	case keymap.ShuffleAll:
 		return m.playShuffled(m.allTracks())
 	case keymap.EnterSearch:

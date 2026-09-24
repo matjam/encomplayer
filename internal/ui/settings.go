@@ -53,6 +53,11 @@ func (m *Model) applyConfig(next config.Config) tea.Cmd {
 	if err := m.applyTheme(next.Theme); err != nil {
 		m.status.errorf("%v", err)
 	}
+	if next.Visualizer != m.viz.info.Name {
+		if err := m.selectViz(next.Visualizer); err != nil {
+			m.status.errorf("%v", err)
+		}
+	}
 	if next.AlbumArt != prev.AlbumArt {
 		cmds = append(cmds, m.applyArt(next.AlbumArt))
 	}
@@ -114,6 +119,9 @@ func (m *Model) reload() tea.Cmd {
 		return nil
 	}
 	m.status = status{}
+	if err := m.viz.catalog.Reload(); err != nil {
+		m.status.errorf("RELOAD: %v", err)
+	}
 	cmd := m.applyConfig(cfg)
 	if !m.status.isError {
 		m.status.infof("config and theme %s reloaded", cfg.Theme)

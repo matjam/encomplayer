@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +29,7 @@ type NoticeMsg struct{ Text string }
 var RemoteCommands = []string{
 	"status", "play", "pause", "toggle", "stop", "next", "prev",
 	"seek", "volume", "repeat", "random", "single", "consume",
-	"shuffle", "shuffle-all", "add", "reload",
+	"shuffle", "shuffle-all", "add", "reload", "viz",
 }
 
 func (m *Model) handleRemote(msg RemoteMsg) tea.Cmd {
@@ -90,6 +91,11 @@ func (m *Model) runRemote(req remote.Request) (tea.Cmd, error) {
 		return m.addPath(arg), nil
 	case "reload":
 		return m.reload(), nil
+	case "viz":
+		if arg != "" && arg != "next" && arg != "prev" && !slices.Contains(m.viz.catalog.Names(), arg) {
+			return nil, fmt.Errorf("viz: no visualizer named %q (see encomplayer --list-visualizers)", arg)
+		}
+		return m.runVizCommand(arg), nil
 	default:
 		return nil, fmt.Errorf("unknown command %q", req.Cmd)
 	}
@@ -177,16 +183,18 @@ func (m *Model) remoteStatus() *remote.Status {
 	p := m.deps.Player
 	pos, length := p.Progress()
 	s := &remote.Status{
-		State:       stateName(p.State()),
-		Position:    pos.Seconds(),
-		Duration:    length.Seconds(),
-		Volume:      p.Volume(),
-		Repeat:      m.modes.Repeat,
-		Random:      m.modes.Random,
-		Single:      m.modes.Single,
-		Consume:     m.modes.Consume,
-		QueueIndex:  m.queue.CurrentIndex(),
-		QueueLength: m.queue.Len(),
+		State:          stateName(p.State()),
+		Position:       pos.Seconds(),
+		Duration:       length.Seconds(),
+		Volume:         p.Volume(),
+		Repeat:         m.modes.Repeat,
+		Random:         m.modes.Random,
+		Single:         m.modes.Single,
+		Consume:        m.modes.Consume,
+		QueueIndex:     m.queue.CurrentIndex(),
+		QueueLength:    m.queue.Len(),
+		Visualizer:     m.viz.info.Name,
+		VisualizerFull: m.viz.full,
 	}
 	if t, _, ok := m.queue.Current(); ok {
 		s.Title, s.Artist, s.Album, s.Path = t.DisplayTitle(), t.DisplayArtist(), t.DisplayAlbum(), t.Path

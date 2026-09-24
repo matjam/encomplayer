@@ -21,6 +21,9 @@ type State struct {
 	// PositionSeconds is how far into the current track playback had got,
 	// so the next launch can resume there.
 	PositionSeconds float64 `json:"position_seconds"`
+
+	// VisualizerFull is true when the visualiser filled the screen.
+	VisualizerFull bool `json:"visualizer_full"`
 }
 
 // Layout holds the pane sizes the user set by dragging dividers.

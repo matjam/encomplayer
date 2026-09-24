@@ -26,6 +26,7 @@ type options struct {
 	version    bool
 	help       bool
 	listThemes bool
+	listViz    bool
 	paths      bool
 	reload     bool
 
@@ -53,6 +54,7 @@ func newFlagSet(opts *options, defaultConfig string) *pflag.FlagSet {
 	fs.BoolVarP(&opts.rescan, "rescan", "r", false, "reread every file's tags at startup instead of trusting the cache")
 	fs.BoolVar(&opts.noMouse, "no-mouse", false, "leave the mouse to the terminal for this run, e.g. to select text")
 	fs.BoolVar(&opts.listThemes, "list-themes", false, "list built-in and custom themes and exit")
+	fs.BoolVar(&opts.listViz, "list-visualizers", false, "list the visualizers and exit")
 	fs.BoolVar(&opts.paths, "paths", false, "print where config, themes, playlists, cache and state live, and exit")
 	fs.BoolVar(&opts.reload, "reload", false, "make the running player reread its config and theme (same as the reload command)")
 	fs.BoolVar(&opts.json, "json", false, "with the status command, print JSON")
@@ -73,7 +75,7 @@ var legacyLong = []string{"art", "config", "version", "help"}
 // given.
 func (o options) exclusive() []string {
 	var set []string
-	for name, on := range map[string]bool{"--help": o.help, "--version": o.version, "--list-themes": o.listThemes, "--paths": o.paths, "--reload": o.reload} {
+	for name, on := range map[string]bool{"--help": o.help, "--version": o.version, "--list-themes": o.listThemes, "--list-visualizers": o.listViz, "--paths": o.paths, "--reload": o.reload} {
 		if on {
 			set = append(set, name)
 		}
@@ -104,6 +106,7 @@ var commandArity = map[string][2]int{
 	"seek": {1, 1}, "volume": {1, 1},
 	"repeat": {0, 1}, "random": {0, 1}, "single": {0, 1}, "consume": {0, 1},
 	"shuffle": {0, 0}, "shuffle-all": {0, 0}, "add": {1, 1}, "reload": {0, 0},
+	"viz": {0, 1},
 }
 
 // valueFlags take a separate value, which must not be mistaken for a
@@ -228,6 +231,7 @@ Commands:
   shuffle-all                   play the whole library shuffled
   add PATH                      append a file or folder to the queue
   reload                        reread config.json and the theme
+  viz [NAME | next | prev]      switch visualizer; alone, toggle full screen
 
 A folder named like a command opens with ./name or -- name.
 
