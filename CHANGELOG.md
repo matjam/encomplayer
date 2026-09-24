@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0](https://github.com/matjam/encomplayer/compare/v1.2.0...v1.3.0) (2026-09-24)
+
+
+### Features
+
+* add flags for themes, shuffle, rescan, mouse, paths and reload ([b3cc0f5](https://github.com/matjam/encomplayer/commit/b3cc0f5f8ef0fe23e713ffcff10ff3d85d74fa29))
+* control a running player from the command line ([b4bf214](https://github.com/matjam/encomplayer/commit/b4bf2147daf17e3ea609a740c3ae8b68435f657e))
+* POSIX-style flags and an ENCOM diagnostics banner for --version ([ec4cb53](https://github.com/matjam/encomplayer/commit/ec4cb53af3529e3aa46cdaa658a4efaf42c538ab))
+
 ## [1.2.0](https://github.com/matjam/encomplayer/compare/v1.1.0...v1.2.0) (2026-09-24)
 
 
