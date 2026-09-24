@@ -81,17 +81,10 @@ jobs:
         if: runner.os == 'Linux'
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
+  # A GoReleaser snapshot builds every archive and package exactly as a
+  # release would, minus publishing, so packaging breaks show up on the PR.
   build:
     needs: test
-    strategy:
-      matrix:
-        include:
-          - { goos: linux, goarch: amd64 }
-          - { goos: linux, goarch: arm64 }
-          - { goos: darwin, goarch: amd64 }
-          - { goos: darwin, goarch: arm64 }
-          - { goos: windows, goarch: amd64 }
-          - { goos: windows, goarch: arm64 }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -111,15 +104,26 @@ jobs:
           path: |
             ${{ steps.go-env.outputs.build }}
             ${{ steps.go-env.outputs.mod }}
-          key: go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          key: go-release-${{ hashFiles('go.sum') }}-${{ github.sha }}
           restore-keys: |
-            go-build-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('go.sum') }}-
-            go-build-${{ matrix.goos }}-${{ matrix.goarch }}-
-      - name: Build
-        id: build
-        run: echo "archive=$(.github/scripts/build.sh ${{ matrix.goos }} ${{ matrix.goarch }} "$(git describe --tags --always)")" >> "$GITHUB_OUTPUT"
+            go-release-${{ hashFiles('go.sum') }}-
+            go-release-
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          distribution: goreleaser
+          version: v2.18.2
+          args: release --snapshot --clean
+        env:
+          # Snapshots never publish; the cask template only needs a value.
+          HOMEBREW_TAP_TOKEN: snapshot
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: encomplayer-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: ${{ steps.build.outputs.archive }}
+          name: encomplayer-snapshot
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.pkg.tar.zst
+            dist/SHA256SUMS
           if-no-files-found: error

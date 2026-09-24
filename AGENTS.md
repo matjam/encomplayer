@@ -17,7 +17,16 @@ test -z "$(gofmt -l .)"
 go vet ./...
 go test -race ./...
 go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
-.github/scripts/build.sh linux amd64 dev    # any goos/goarch
+go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean
+```
+
+The snapshot builds every archive, `.deb`, `.rpm` and Arch package into
+`dist/` without publishing. Check `sh install.sh` after touching the release
+layout; it must handle both the current archives and older ones.
+
+```sh
+# optional: install and run a package in a clean container
+docker run --rm -v "$PWD/dist":/pkg debian:stable-slim sh -c 'apt-get -qq update && apt-get install -y /pkg/*_arm64.deb && encomplayer --version'
 ```
 
 The decoder integration tests in `internal/audio` generate audio with ffmpeg
@@ -83,7 +92,10 @@ produce a 2.0.0. Moving to 2.x is a decision for the maintainer alone.
 1. Merging to `main` makes release-please open or update a release PR with
    the next version and changelog.
 2. Merging that PR tags `vX.Y.Z` and publishes a GitHub release.
-3. The release workflow then attaches static binaries for linux, darwin and
-   windows on amd64 and arm64, plus `SHA256SUMS`.
+3. The release workflow then runs GoReleaser (`.goreleaser.yaml`) on that
+   tag. It attaches archives for linux, darwin and windows on amd64 and
+   arm64, `.deb`, `.rpm` and Arch packages, and `SHA256SUMS`, and pushes the
+   cask to `matjam/homebrew-tap` using the `HOMEBREW_TAP_TOKEN` secret
+   (fine-grained, Contents read/write on the tap only).
 
 Never tag or publish releases by hand.

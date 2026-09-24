@@ -10,6 +10,64 @@ encomplayer [--art auto|kitty|iterm|blocks|off] [--config path] [music-dir]
 The music folder comes from the argument, then `music_dir` in the config, then
 `~/Music`.
 
+## Install
+
+### Script (Linux and macOS)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/matjam/encomplayer/main/install.sh | sh
+```
+
+Installs the latest release to `~/.local/bin` after checking it against the
+release's `SHA256SUMS`. Set `BINDIR` to install elsewhere or `VERSION` to pick
+a release, e.g. `curl -fsSL … | BINDIR=/usr/local/bin VERSION=v1.1.0 sh`.
+
+### Homebrew (macOS)
+
+```sh
+brew install --cask matjam/tap/encomplayer
+```
+
+### Debian and Ubuntu
+
+```sh
+v=1.2.0   # the release you want, without the v
+curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer_${v}_amd64.deb
+sudo apt install ./encomplayer_${v}_amd64.deb
+```
+
+### Fedora, RHEL and openSUSE
+
+```sh
+v=1.2.0
+sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1.x86_64.rpm
+```
+
+### Arch Linux
+
+```sh
+v=1.2.0
+sudo pacman -U https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
+```
+
+On ARM, use `arm64` for the `.deb` and `aarch64` for the `.rpm` and Arch
+package. Windows users can download the `.zip` from the
+[releases page](https://github.com/matjam/encomplayer/releases).
+
+### ffmpeg
+
+MP3, FLAC, Ogg Vorbis and WAV play without anything else. For AAC/M4A, ALAC,
+Opus, WavPack and other formats, install ffmpeg as well (`brew install ffmpeg`,
+`sudo apt install ffmpeg`, `sudo pacman -S ffmpeg`). The Debian and Fedora
+packages suggest it; the Arch package cannot declare optional dependencies,
+so install it yourself there.
+
+### From source
+
+```sh
+go install github.com/matjam/encomplayer/cmd/encomplayer@latest
+```
+
 ## Screnshot
 
 <img width="1274" height="892" alt="image" src="https://github.com/user-attachments/assets/c0e1891d-1e01-411b-b4e7-c0aa993a7fbf" />
