@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/matjam/encomplayer/compare/v1.1.0...v1.2.0) (2026-09-24)
+
+
+### Features
+
+* ship Homebrew, deb, rpm and Arch packages and an install script ([fc1f702](https://github.com/matjam/encomplayer/commit/fc1f7021842ea7eb20b1ca9a3b1cac62d16fa87d))
+
+
+### Bug Fixes
+
+* move on to the next track when the playing one is deleted ([d750c44](https://github.com/matjam/encomplayer/commit/d750c4443f6da7a0f302a2b94d6c46806758a1fd))
+
 ## [1.1.0](https://github.com/matjam/encomplayer/compare/v1.0.0...v1.1.0) (2026-09-23)
 
 
