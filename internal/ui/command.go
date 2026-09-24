@@ -28,6 +28,8 @@ var commandHelp = [][2]string{
 	{":repeat :random :single :consume", "toggle a mode"},
 	{":config", "open the config screen (oc)"},
 	{":theme <name>", "switch theme and save it"},
+	{":viz", "show the visualizer full screen, or close it (ov)"},
+	{":viz <name|next|prev>", "switch visualizer ([ and ])"},
 	{":reload", "reread config.json and the theme (also SIGUSR1)"},
 	{":help", "show this screen"},
 	{":q", "quit"},
@@ -91,6 +93,8 @@ func (m *Model) runCommand(line string) tea.Cmd {
 			return nil
 		}
 		return m.updateConfig(func(c *config.Config) { c.Theme = arg })
+	case "viz", "visualizer":
+		return m.runVizCommand(arg)
 	case "help":
 		m.modal = newHelpModal(m.deps.Keymap)
 	default:

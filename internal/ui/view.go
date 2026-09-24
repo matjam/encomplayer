@@ -37,9 +37,13 @@ func (m *Model) View() tea.View {
 	}
 
 	lines := m.header()
-	lines = append(lines, m.tabBar())
-
-	body := m.tabs[m.active].view(m, m.width, m.bodyHeight())
+	var body []string
+	if m.viz.full {
+		body = m.vizView()
+	} else {
+		lines = append(lines, m.tabBar())
+		body = m.tabs[m.active].view(m, m.width, m.bodyHeight())
+	}
 	if m.modal != nil {
 		body = overlay(body, m.modal.view(m.st, m.width, m.bodyHeight()), m.width)
 	}
@@ -119,41 +123,18 @@ func (m *Model) tabBar() string {
 	return fit(bar, m.width-ansi.StringWidth(right)) + right
 }
 
+// footer is the SIGNAL strip: the visualiser over the seek bar, or just the
+// seek bar while the visualiser is full screen.
 func (m *Model) footer() []string {
-	st := m.st
-	body := append(m.spectrumLines(m.width-2, m.spectrumRows()), m.progressLine())
-	return st.panel("signal", body, m.width, m.footerRows(), false)
-}
-
-// levels are the eighth-block glyphs; each spectrum row resolves eight steps.
-var levels = []rune(" ▁▂▃▄▅▆▇█")
-
-// spectrumLines draws the analyser rows tall. Each bar fills bottom-up in
-// eighths of a row, and rows higher up the strip glow brighter, then orange,
-// like a VU meter.
-func (m *Model) spectrumLines(w, rows int) []string {
-	st := m.st
-	steps := rows * (len(levels) - 1)
-	lines := make([]string, rows)
-	for r := range rows {
-		fromBottom := rows - 1 - r
-		style := st.text
-		switch height := float64(fromBottom+1) / float64(rows); {
-		case height > 0.85 && rows > 1:
-			style = st.accent
-		case height > 0.5:
-			style = st.bright
-		}
-
-		var b strings.Builder
-		for x := range w {
-			v := m.spectrum[x*len(m.spectrum)/max(1, w)]
-			lit := int(v*float64(steps)+0.5) - fromBottom*(len(levels)-1)
-			b.WriteRune(levels[max(0, min(lit, len(levels)-1))])
-		}
-		lines[r] = style.Render(b.String())
+	title := "signal · " + m.viz.info.Name
+	body := make([]string, m.spectrumRows(), m.spectrumRows()+1)
+	if m.viz.full {
+		title = ""
+	} else {
+		copy(body, m.viz.lines)
 	}
-	return lines
+	body = append(body, m.progressLine())
+	return m.st.panel(title, body, m.width, m.footerRows(), false)
 }
 
 func (m *Model) progressLine() string {

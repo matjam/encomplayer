@@ -15,6 +15,9 @@ rmpc's keybindings. No MPD required.
   (inline images), and half-block rendering in any truecolor terminal.
 - Instant startup from a cache, background sync, and periodic rescans that
   pick up files added while it runs.
+- 22 visualizers in the SIGNAL strip or full screen, from Winamp-style
+  peaks and a phosphor vectorscope to demoscene plasma, Doom fire, MilkDrop
+  feedback trails and light cycles racing the Grid.
 - Control a running player from the shell, e.g. from a window manager
   keybinding or a status bar.
 - 34 built-in themes, custom themes, and a config screen that applies changes
@@ -133,6 +136,7 @@ The music folder comes from the argument, then `music_dir` in the config, then
 | `--no-mouse` | Leave the mouse to the terminal, e.g. to select text |
 | `-c, --config FILE` | Config file (default `~/.config/encomplayer/config.json`) |
 | `--list-themes` | List built-in and custom themes |
+| `--list-visualizers` | List the visualizers |
 | `--paths` | Print where config, themes, playlists, cache, state and the socket live |
 | `-v, --version` | Print the version and a diagnostics banner |
 | `-h, --help` | Show help |
@@ -160,6 +164,8 @@ With a player running, these commands control it from any shell:
 | `shuffle-all` | Replace the queue with the whole library, shuffled, and play it |
 | `add PATH` | Append a file or folder to the queue |
 | `reload` | Reread `config.json` and the theme |
+| `viz` | Show the visualizer full screen, or close it |
+| `viz NAME`, `viz next`, `viz prev` | Switch visualizer |
 
 ```sh
 encomplayer toggle
@@ -204,6 +210,8 @@ The defaults match rmpc. Press `?` for the full list.
 | `d`, `D`, `J`/`K`, `C` | Queue: delete, clear, move, jump to current |
 | `C-u`, `C-U` | Sync library, full rescan (in command mode: `:update`, `:rescan`) |
 | `oc` | Config screen |
+| **`ov`** | **Visualizer full screen; `Esc` closes it** |
+| `[` / `]` | Previous / next visualizer |
 | `:` | Command mode (`:help` lists commands) |
 
 The Playlists tab starts with **ALL MUSIC**, so `6` `X` also shuffles
@@ -223,6 +231,8 @@ relaunching, `p` resumes the track where it stopped. Choosing a track with
 | Browser right column | Open the clicked item | | |
 | Seek bar | Seek | | |
 | Volume meter, mode flags | Set volume, toggle mode | | |
+| SIGNAL strip | | Visualizer full screen | |
+| Full-screen visualizer | | Close it | Switch visualizer |
 | Help | | | Scroll |
 
 Drag a divider to resize panes. The dividers are the SIGNAL strip's top edge
@@ -248,6 +258,8 @@ The settings live in `~/.config/encomplayer/config.json` (or
   "rescan_seconds": 0,
   "enable_mouse": true,
   "scroll_amount": 1,
+  "visualizer": "spectrum",
+  "visualizer_fps": 30,
   "keybinds": {
     "global": { "<C-p>": "TogglePause" },
     "queue": { "x": "Delete" }
@@ -258,9 +270,69 @@ The settings live in `~/.config/encomplayer/config.json` (or
 `rescan_seconds` of 0 checks every 60 s on local disks and every 10 minutes on
 network mounts. A negative value disables periodic rescans.
 
+`visualizer_fps` (5–60) sets how often visualizers redraw while music plays.
+The player redraws 10 times a second when nothing plays.
+
 After editing the file, apply it without restarting by running
 `encomplayer reload`, `:reload` inside the player, or
 `pkill -USR1 encomplayer`.
+
+## Visualizers
+
+The SIGNAL strip shows the selected visualizer above the seek bar. Press
+`ov` (or run `:viz`, or double-click the strip) to fill the screen with it;
+`Esc`, `ov` or a tab key returns. `[` and `]` step through them, and the
+config screen previews each one as you move through its list. Every
+visualizer draws in the current theme's colours.
+
+| Kind | Visualizers |
+|---|---|
+| Classic analysers | `spectrum` (default), `peaks` (Winamp caps), `mirror`, `waterfall` (spectrogram), `radial`, `vu` (analogue needles) |
+| Scopes | `oscilloscope`, `stereo-scope`, `vectorscope` (goniometer with phosphor glow), `ring-scope` |
+| Demoscene | `plasma`, `fire`, `tunnel`, `starfield`, `matrix`, `particles` |
+| ENCOM and beyond | `lightcycles`, `outrun`, `milkdrop` (feedback trails), `disc` (identity disc), `life` (Game of Life), `wireframe` |
+
+`encomplayer --list-visualizers` prints each with a description. They see
+the music before the volume control, so they stay lively at low volume.
+
+### Writing a visualizer
+
+A visualizer is one Go file in `internal/viz/builtin`. It registers itself
+from `init`, so dropping in the file is all it takes:
+
+```go
+package builtin
+
+import "github.com/matjam/encomplayer/internal/viz"
+
+func init() {
+	viz.Register(viz.Info{Name: "pulse", Description: "A dot that swells with the bass"},
+		func() viz.Visualizer { return &pulse{} })
+}
+
+type pulse struct{}
+
+func (*pulse) Render(c *viz.Canvas, f *viz.Frame) error {
+	r := float64(min(c.DotW(), c.DotH())) / 2 * f.Bass
+	c.Line(float64(c.DotW())/2-r, float64(c.DotH())/2, float64(c.DotW())/2+r, float64(c.DotH())/2, c.Palette.Accent)
+	return nil
+}
+```
+
+- `viz.Frame` carries both channels' latest 2,048 samples, the FFT
+  spectrum and `Bands(n)`, levels, bass, mid and treble energy, beat
+  detection, and the playing track.
+- `viz.Canvas` draws in three resolutions: cells with any glyph,
+  half-block pixels (two per cell) and braille dots (2×4 per cell).
+  `c.Palette` holds the theme's colours and ramps.
+- The factory runs each time the visualizer is selected, so it may keep
+  state between frames.
+- The tests in `internal/viz/builtin` run every registered visualizer at
+  several sizes, in music and in silence, and `go test -bench .` there
+  reports each one's cost per frame.
+
+Visualizers loaded at run time, such as scripts, can plug in as a
+`viz.Source` without changing the player.
 
 ## Themes
 
@@ -326,6 +398,8 @@ file retagged in place when its folder did not change.
   Decoders registered earlier take priority.
 - **Tags:** implement `library.TagReader` and add it to the `Tagger` chain.
 - **Image protocols:** implement `art.Renderer` and register it by name.
+- **Visualizers:** add a file to `internal/viz/builtin` that calls
+  `viz.Register` from `init`; see [Writing a visualizer](#writing-a-visualizer).
 - **Keys:** every action can be rebound in the config.
 
 ## Building

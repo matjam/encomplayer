@@ -19,6 +19,7 @@ import (
 	"github.com/matjam/encomplayer/internal/remote"
 	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // maxSocketPath is the longest socket path every platform accepts. macOS
@@ -159,6 +160,26 @@ func printPaths(w io.Writer, paths config.Paths) {
 	}
 	for _, r := range rows {
 		fmt.Fprintf(w, "%-10s %s\n", r[0], r[1])
+	}
+}
+
+// printVisualizers lists visualisers. On a terminal each gets its
+// description and the configured one is marked; piped, it prints bare
+// names.
+func printVisualizers(w io.Writer, tty bool, infos []viz.Info, current string) {
+	width := 0
+	for _, info := range infos {
+		width = max(width, len(info.Name))
+	}
+	for _, info := range infos {
+		switch {
+		case !tty:
+			fmt.Fprintln(w, info.Name)
+		case info.Name == current:
+			fmt.Fprintf(w, "▶ %-*s  %s\n", width, info.Name, info.Description)
+		default:
+			fmt.Fprintf(w, "  %-*s  %s\n", width, info.Name, info.Description)
+		}
 	}
 }
 

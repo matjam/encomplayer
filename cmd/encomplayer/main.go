@@ -31,6 +31,7 @@ import (
 	"github.com/matjam/encomplayer/internal/playlist"
 	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // version is set at build time with -ldflags "-X main.version=v1.2.3".
@@ -83,6 +84,9 @@ func run(args []string) error {
 			current = opts.theme
 		}
 		printThemes(os.Stdout, tty, theme.NewStore(paths.Themes), current)
+		return nil
+	case opts.listViz:
+		printVisualizers(os.Stdout, tty, viz.Builtins.List(), cfg.Visualizer)
 		return nil
 	case opts.command != "":
 		return runControl(os.Stdout, socketPath(paths), opts)

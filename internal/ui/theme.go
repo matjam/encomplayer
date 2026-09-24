@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/theme"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // styles are the lipgloss styles for one theme. The model owns the current
@@ -18,6 +19,9 @@ type styles struct {
 
 	// background fills the screen, or is nil to keep the terminal's own.
 	background color.Color
+
+	// palette is the theme for visualisers.
+	palette viz.Palette
 
 	text, bright, dim, grid, accent, err lipgloss.Style
 	cursor, dimCursor, tabOn, tabOff     lipgloss.Style
@@ -41,8 +45,13 @@ func newStyles(t theme.Theme) *styles {
 		border:    lipgloss.NewStyle().Foreground(c(t.Border)),
 		borderOn:  lipgloss.NewStyle().Foreground(c(t.Text)),
 	}
+	st.palette = viz.Palette{
+		Text: viz.Hex(t.Text), Bright: viz.Hex(t.Bright), Dim: viz.Hex(t.Dim),
+		Grid: viz.Hex(t.Grid), Accent: viz.Hex(t.Accent), Error: viz.Hex(t.Error),
+	}
 	if t.Background != "" {
 		st.background = c(t.Background)
+		st.palette.Background = viz.Hex(t.Background)
 	}
 	return st
 }

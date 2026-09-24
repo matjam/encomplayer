@@ -15,11 +15,20 @@ const (
 	// volBarWidth covers the label, the segments and " 100%".
 	volBarWidth = len(volLabel) + volSegments + 5
 
-	volumeRow = 1
-	modesRow  = 2
-	tabBarRow = headerRows
-	bodyTop   = headerRows + tabRows
+	volumeRow  = 1
+	modesRow   = 2
+	tabBarRow  = headerRows
+	tabBodyTop = headerRows + tabRows
 )
+
+// bodyTop is the first row under the header chrome. The full-screen
+// visualiser hides the tab bar and starts right under the header.
+func (m *Model) bodyTop() int {
+	if m.viz.full {
+		return headerRows
+	}
+	return tabBodyTop
+}
 
 var modeNames = []string{"REPEAT", "RANDOM", "SINGLE", "CONSUME"}
 
@@ -89,17 +98,23 @@ func (m *Model) clampLayout() {
 	l.PreviewPercent = max(minSidePct, min(l.PreviewPercent, maxSidesPct-l.ParentPercent))
 }
 
-// footerRows is the signal strip's height, borders included.
-func (m *Model) footerRows() int { return m.sizes.FooterRows }
+// footerRows is the signal strip's height, borders included. With the
+// visualiser full screen the strip holds only the seek bar.
+func (m *Model) footerRows() int {
+	if m.viz.full {
+		return fullFooterRows
+	}
+	return m.sizes.FooterRows
+}
 
-// spectrumRows is how many rows the spectrum analyser fills.
+// spectrumRows is how many rows the visualiser fills in the strip.
 func (m *Model) spectrumRows() int { return m.footerRows() - 3 }
 
 // footerTop is the first row of the signal panel; dragging it resizes the
 // strip.
-func (m *Model) footerTop() int { return bodyTop + m.bodyHeight() }
+func (m *Model) footerTop() int { return m.bodyTop() + m.bodyHeight() }
 
-// progressRow is the row holding the seek bar, under the spectrum.
+// progressRow is the row holding the seek bar, under the visualiser.
 func (m *Model) progressRow() int { return m.footerTop() + 1 + m.spectrumRows() }
 
 // progressBarSpan returns the column of the first seek-bar cell and the bar

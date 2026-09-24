@@ -142,6 +142,19 @@ func themeField() field[string] {
 	return f
 }
 
+// vizField picks the visualiser, previewing each one in the SIGNAL strip
+// while the list is browsed.
+func vizField() field[string] {
+	f := stringField("Visualizer", func(c *config.Config) *string { return &c.Visualizer })
+	f.choices = func(m *Model) []string { return m.viz.catalog.Names() }
+	f.preview = func(m *Model, name string) {
+		if err := m.selectViz(name); err != nil {
+			m.status.errorf("%v", err)
+		}
+	}
+	return f
+}
+
 func artField() field[string] {
 	f := stringField("Album art", func(c *config.Config) *string { return &c.AlbumArt })
 	f.choices = func(*Model) []string { return art.Settings }
@@ -235,7 +248,12 @@ func configTabs() []configTab {
 			}
 		}},
 		{name: "Appearance", rows: func(*Model) []configRow {
-			return []configRow{themeField(), artField()}
+			return []configRow{
+				themeField(),
+				artField(),
+				vizField(),
+				intField("Visualizer frames per second", minVizFPS, maxVizFPS, func(c *config.Config) *int { return &c.VisualizerFPS }),
+			}
 		}},
 		{name: "Mouse", rows: func(*Model) []configRow {
 			return []configRow{

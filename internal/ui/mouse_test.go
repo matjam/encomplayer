@@ -41,7 +41,7 @@ func TestMouseTabsAndQueue(t *testing.T) {
 		t.Fatalf("tab click selected %d, want Queue", m.active)
 	}
 
-	row := bodyTop + queueFirstRow + 2
+	row := tabBodyTop + queueFirstRow + 2
 	click(m, 60, row)
 	if m.queueList.Cursor() != 2 {
 		t.Fatalf("click set cursor %d, want 2", m.queueList.Cursor())
@@ -100,7 +100,7 @@ func TestMouseBrowserColumns(t *testing.T) {
 	m, fp := newTestModel(t)
 	press(m, "3") // Artists: Daft Punk, Wendy Carlos
 	parentW, currentW, _ := browserSplit(m, m.width)
-	firstRow := bodyTop + 1
+	firstRow := tabBodyTop + 1
 
 	click(m, parentW+currentW+3, firstRow) // preview column: open the album
 	b := m.tabs[m.active].(*browserTab)
@@ -143,11 +143,11 @@ func TestDragDividers(t *testing.T) {
 
 	press(m, "2")
 	parentW, _, _ := browserSplit(m, m.width)
-	drag(m, parentW, bodyTop+3, m.width*40/100, bodyTop+3)
+	drag(m, parentW, tabBodyTop+3, m.width*40/100, tabBodyTop+3)
 	if m.sizes.ParentPercent != 40 {
 		t.Errorf("parent column is %d%%, want 40%%", m.sizes.ParentPercent)
 	}
-	drag(m, parentW, bodyTop+3, m.width, bodyTop+3)
+	drag(m, parentW, tabBodyTop+3, m.width, tabBodyTop+3)
 	if _, currentW, _ := browserSplit(m, m.width); currentW < m.width/4 {
 		t.Errorf("current column squeezed to %d cells", currentW)
 	}

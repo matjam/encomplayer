@@ -25,7 +25,7 @@ type Player interface {
 	SetVolume(percent int)
 	Volume() int
 	State() audio.State
-	Spectrum(bands int) []float64
+	Samples() (left, right []float64, rate int)
 	Ended() <-chan uint64
 }
 

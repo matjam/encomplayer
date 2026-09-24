@@ -61,6 +61,9 @@ type Status struct {
 	Consume     bool    `json:"consume"`
 	QueueIndex  int     `json:"queue_index"`
 	QueueLength int     `json:"queue_length"`
+
+	Visualizer     string `json:"visualizer"`
+	VisualizerFull bool   `json:"visualizer_full"`
 }
 
 // Handler runs a request inside the player and returns its answer.

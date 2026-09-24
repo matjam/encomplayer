@@ -47,16 +47,16 @@ type Player struct {
 	ended    chan uint64
 	cache    *trackCache
 
-	mu       sync.Mutex
-	stream   beep.StreamSeekCloser
-	path     string
-	format   beep.Format
-	ctrl     *beep.Ctrl
-	volume   *effects.Volume
-	analyzer *Analyzer
-	gen      uint64
-	percent  int
-	state    State
+	mu      sync.Mutex
+	stream  beep.StreamSeekCloser
+	path    string
+	format  beep.Format
+	ctrl    *beep.Ctrl
+	volume  *effects.Volume
+	tap     *Tap
+	gen     uint64
+	percent int
+	state   State
 }
 
 // NewPlayer opens the audio device.
@@ -113,12 +113,14 @@ func (p *Player) Play(ctx context.Context, path string, start time.Duration) (ui
 	})
 
 	p.ctrl = &beep.Ctrl{Streamer: beep.Seq(src, done)}
-	p.volume = &effects.Volume{Streamer: p.ctrl, Base: 2}
+	// The tap sits before the volume control, so visualisers see the
+	// music at full level however quietly it plays.
+	p.tap = NewTap(p.ctrl)
+	p.volume = &effects.Volume{Streamer: p.tap, Base: 2}
 	p.applyVolumeLocked()
-	p.analyzer = NewAnalyzer(p.volume, outputRate)
 	p.stream, p.format, p.state, p.path = stream, format, Playing, path
 
-	speaker.Play(p.analyzer)
+	speaker.Play(p.volume)
 	return gen, nil
 }
 
@@ -236,16 +238,18 @@ func (p *Player) State() State {
 	return p.state
 }
 
-// Spectrum returns band levels for the playing audio, or zeros when idle.
-func (p *Player) Spectrum(bands int) []float64 {
+// Samples returns the most recent samples of each channel, oldest first,
+// and their rate. Both are empty unless a track is playing.
+func (p *Player) Samples() (left, right []float64, rate int) {
 	p.mu.Lock()
-	a, state := p.analyzer, p.state
+	t, state := p.tap, p.state
 	p.mu.Unlock()
 
-	if a == nil || state != Playing {
-		return make([]float64, bands)
+	if t == nil || state != Playing {
+		return nil, nil, int(outputRate)
 	}
-	return a.Spectrum(bands)
+	left, right = t.Window()
+	return left, right, int(outputRate)
 }
 
 // Close stops playback and releases the audio device.
@@ -261,7 +265,7 @@ func (p *Player) stopLocked() {
 		// failure cannot affect playback and there is nothing to recover.
 		_ = p.stream.Close()
 	}
-	p.stream, p.ctrl, p.volume, p.analyzer = nil, nil, nil, nil
+	p.stream, p.ctrl, p.volume, p.tap = nil, nil, nil, nil
 	p.state, p.path = Stopped, ""
 }
 
