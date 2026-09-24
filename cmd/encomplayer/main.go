@@ -2,13 +2,14 @@
 //
 // Usage:
 //
-//	encomplayer [flags] [music-dir]
+//	encomplayer [options] [music-folder]
+//
+// Run encomplayer --help for the options.
 package main
 
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/term"
 
 	"github.com/matjam/encomplayer/internal/art"
 	"github.com/matjam/encomplayer/internal/audio"
@@ -35,33 +37,41 @@ import (
 var version = "dev"
 
 func main() {
-	if err := run(); err != nil {
+	err := run(os.Args[1:])
+	switch {
+	case err == nil:
+	case isUsage(err):
+		fmt.Fprintf(os.Stderr, "encomplayer: %v\nRun 'encomplayer --help' for usage.\n", err)
+		os.Exit(2)
+	default:
 		fmt.Fprintf(os.Stderr, "encomplayer: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run(args []string) error {
 	paths, err := config.DefaultPaths()
 	if err != nil {
 		return err
 	}
 
-	artFlag := flag.String("art", "", "album art protocol: auto, kitty, iterm, blocks or off")
-	configPath := flag.String("config", paths.Config, "config file")
-	showVersion := flag.Bool("version", false, "print the version and exit")
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage: encomplayer [flags] [music-dir]\n\n")
-		flag.PrintDefaults()
+	opts, err := parseArgs(args, paths.Config)
+	if err != nil {
+		return err
 	}
-	flag.Parse()
-	if *showVersion {
-		fmt.Println("encomplayer", version)
+	if opts.help {
+		printUsage(os.Stdout, paths.Config)
 		return nil
 	}
 
-	paths.Config = *configPath
+	paths.Config = opts.config
 	cfg, err := config.Load(paths.Config)
+	if opts.version {
+		// A broken config should not stop --version; the banner falls back
+		// to defaults.
+		showVersion(opts, cfg, paths)
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -90,8 +100,8 @@ func run() error {
 	// The --art flag applies to this run only; it is not written back to
 	// the config file.
 	artSetting := cfg.AlbumArt
-	if *artFlag != "" {
-		artSetting = *artFlag
+	if opts.art != "" {
+		artSetting = opts.art
 	}
 	renderer, protocol, err := art.Choose(artSetting, os.Getenv)
 	if err != nil {
@@ -126,7 +136,7 @@ func run() error {
 		Config:      cfg,
 		State:       state,
 		Paths:       paths,
-		MusicDir:    musicDir(cfg),
+		MusicDir:    musicDir(opts.musicDir, cfg),
 		Version:     version,
 	})
 
@@ -140,11 +150,33 @@ func run() error {
 	return nil
 }
 
+// showVersion prints the version banner using the configured theme.
+func showVersion(opts options, cfg config.Config, paths config.Paths) {
+	tty := term.IsTerminal(os.Stdout.Fd())
+	b := banner{version: version}
+	if tty {
+		t, err := theme.NewStore(paths.Themes).Load(cfg.Theme)
+		if err != nil {
+			t, _ = theme.Builtin(theme.Default)
+		}
+		artSetting := cfg.AlbumArt
+		if opts.art != "" {
+			artSetting = opts.art
+		}
+		b.theme = t
+		b.terminal = detectTerminal(os.Getenv)
+		b.artProto = artProtocolName(artSetting, os.Getenv)
+		b.ffmpeg = ffmpegVersion()
+		b.musicDir = musicDir(opts.musicDir, cfg)
+	}
+	printVersion(os.Stdout, tty, b)
+}
+
 // musicDir picks the folder to scan: the argument, then the config file,
 // then ~/Music when it exists.
-func musicDir(cfg config.Config) string {
-	if flag.NArg() > 0 {
-		return flag.Arg(0)
+func musicDir(arg string, cfg config.Config) string {
+	if arg != "" {
+		return arg
 	}
 	if cfg.MusicDir != "" {
 		return cfg.MusicDir
