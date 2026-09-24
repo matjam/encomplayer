@@ -1,0 +1,66 @@
+package ui
+
+import (
+	"image"
+	"testing"
+
+	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+
+	"github.com/matjam/encomplayer/internal/art"
+)
+
+// recordingRenderer remembers the boxes it was asked to fill.
+type recordingRenderer struct{ boxes []art.Box }
+
+func (r *recordingRenderer) Render(_ image.Image, box art.Box) (art.Frame, error) {
+	r.boxes = append(r.boxes, box)
+	return art.Frame{Lines: make([]string, box.Rows)}, nil
+}
+
+func TestCellSizeReportRerendersArt(t *testing.T) {
+	m, _ := newTestModel(t)
+	rec := &recordingRenderer{}
+	m.deps.Art = rec
+	m.Update(tea.WindowSizeMsg{Width: 160, Height: 50})
+
+	box, _, _ := m.artBox()
+	if box.Cols == 0 {
+		t.Fatal("no room for art at 160x50")
+	}
+	m.art.path, m.art.img, m.art.box = "cover.flac", image.NewRGBA(image.Rect(0, 0, 4, 4)), box
+
+	steps := []struct {
+		name     string
+		report   uv.CellSizeEvent
+		wantCell image.Point // zero means no re-render
+	}{
+		{name: "empty report ignored", report: uv.CellSizeEvent{}},
+		{name: "first report", report: uv.CellSizeEvent{Width: 9, Height: 19}, wantCell: image.Pt(9, 19)},
+		{name: "same size again", report: uv.CellSizeEvent{Width: 9, Height: 19}},
+		{name: "font zoom", report: uv.CellSizeEvent{Width: 12, Height: 25}, wantCell: image.Pt(12, 25)},
+	}
+	for _, s := range steps {
+		cmd := m.update(s.report)
+		if s.wantCell == (image.Point{}) {
+			if cmd != nil {
+				t.Errorf("%s: re-rendered", s.name)
+			}
+			continue
+		}
+		if cmd == nil {
+			t.Fatalf("%s: did not re-render", s.name)
+		}
+		msg, ok := cmd().(artMsg)
+		if !ok || msg.box.Cell != s.wantCell {
+			t.Fatalf("%s: rendered %+v, want cell %v", s.name, msg.box, s.wantCell)
+		}
+		m.update(msg)
+		if m.art.box != msg.box {
+			t.Errorf("%s: art box = %+v, want %+v", s.name, m.art.box, msg.box)
+		}
+	}
+	if len(rec.boxes) != 2 {
+		t.Errorf("rendered %d times, want 2", len(rec.boxes))
+	}
+}

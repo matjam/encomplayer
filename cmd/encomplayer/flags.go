@@ -47,7 +47,7 @@ func (u usageError) Unwrap() error { return u.err }
 func newFlagSet(opts *options, defaultConfig string) *pflag.FlagSet {
 	fs := pflag.NewFlagSet("encomplayer", pflag.ContinueOnError)
 	fs.SortFlags = true
-	fs.StringVarP(&opts.art, "art", "a", "", "album art protocol for this run: auto, kitty, iterm, blocks or off")
+	fs.StringVarP(&opts.art, "art", "a", "", "album art protocol for this run: auto, kitty, iterm, sixel, blocks or off")
 	fs.StringVarP(&opts.theme, "theme", "t", "", "theme for this run (see --list-themes)")
 	fs.StringVarP(&opts.config, "config", "c", defaultConfig, "config file")
 	fs.BoolVarP(&opts.shuffle, "shuffle", "s", false, "start playing the whole library shuffled")

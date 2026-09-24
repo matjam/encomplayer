@@ -12,7 +12,8 @@ import (
 type BlockRenderer struct{}
 
 // Render implements Renderer.
-func (BlockRenderer) Render(img image.Image, cols, rows int) (Frame, error) {
+func (BlockRenderer) Render(img image.Image, box Box) (Frame, error) {
+	cols, rows := box.Cols, box.Rows
 	// A cell is about twice as tall as wide, so each half is square.
 	fit := Fit(img, cols, rows*2)
 	fw, fh := fit.Bounds().Dx(), fit.Bounds().Dy()

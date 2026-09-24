@@ -6,8 +6,9 @@ import "strings"
 //
 // kitty and Ghostty support kitty's Unicode placeholders, which flow through
 // the normal text layout. iTerm2 and WezTerm support iTerm2 inline images.
-// Anything else gets half-block rendering. tmux and screen get half blocks
-// too, because graphics passthrough depends on their configuration.
+// foot supports sixel. Anything else gets half-block rendering. tmux and
+// screen get half blocks too, because graphics passthrough depends on their
+// configuration.
 func Detect(getenv func(string) string) Protocol {
 	term := getenv("TERM")
 	program := getenv("TERM_PROGRAM")
@@ -23,6 +24,8 @@ func Detect(getenv func(string) string) Protocol {
 		return ITerm
 	case program == "WezTerm":
 		return ITerm
+	case term == "foot" || strings.HasPrefix(term, "foot-"):
+		return Sixel
 	default:
 		return Blocks
 	}

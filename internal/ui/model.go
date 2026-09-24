@@ -4,10 +4,12 @@ package ui
 
 import (
 	"context"
+	"image"
 	"math/rand/v2"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	uv "github.com/charmbracelet/ultraviolet"
 
 	"github.com/matjam/encomplayer/internal/audio"
 	"github.com/matjam/encomplayer/internal/collection"
@@ -41,6 +43,7 @@ type Model struct {
 	rng  *rand.Rand
 
 	width, height int
+	cell          image.Point // pixels per cell; zero until the terminal reports it
 
 	lib       *library.Library
 	snapshot  *library.Snapshot
@@ -125,7 +128,7 @@ func New(ctx context.Context, deps Deps) *Model {
 
 // Init starts the boot sequence, the first scan and the background loops.
 func (m *Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{m.tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize}
+	cmds := []tea.Cmd{m.tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize, requestCellSize}
 	if m.deps.MusicDir != "" {
 		cmds = append(cmds, m.loadCache(m.deps.MusicDir))
 	} else {
@@ -161,7 +164,10 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 		m.width, m.height = msg.Width, msg.Height
 		m.layout()
 		m.renderViz(time.Now())
-		return m.refreshArt()
+		return tea.Batch(m.refreshArt(), requestCellSize)
+
+	case uv.CellSizeEvent:
+		return m.setCellSize(image.Pt(msg.Width, msg.Height))
 
 	case tickMsg:
 		m.position, m.length = m.deps.Player.Progress()

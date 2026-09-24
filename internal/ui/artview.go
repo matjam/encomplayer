@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/art"
 	"github.com/matjam/encomplayer/internal/domain"
@@ -20,44 +21,60 @@ const placeDelay = 80 * time.Millisecond
 // artMetaRows is the space under the image for title, artist and album.
 const artMetaRows = 5
 
+// requestCellSize asks the terminal for its cell size in pixels (XTWINOPS
+// 16), which sixel images are sized by. The reply arrives as a
+// uv.CellSizeEvent; terminals that do not support it stay silent.
+var requestCellSize = tea.Raw(ansi.WindowOp(16))
+
 type artState struct {
-	path       string
-	img        image.Image
-	frame      *art.Frame
-	cols, rows int
-	loading    bool
-	missing    bool
+	path    string
+	img     image.Image
+	frame   *art.Frame
+	box     art.Box
+	loading bool
+	missing bool
 
 	placeSeq uint64
 	erase    string
 }
 
 type artMsg struct {
-	path       string
-	img        image.Image
-	frame      art.Frame
-	err        error
-	cols, rows int
+	path  string
+	img   image.Image
+	frame art.Frame
+	err   error
+	box   art.Box
 }
 
 type artPlaceMsg uint64
 
-// artBox returns the image size in cells and its top-left screen cell.
-func (m *Model) artBox() (cols, rows, x, y int) {
+// artBox returns the image box and its top-left screen cell. The box has
+// zero columns when there is no room for art.
+func (m *Model) artBox() (box art.Box, x, y int) {
 	artW, _ := queueSplit(m, m.width)
 	if artW == 0 {
-		return 0, 0, 0, 0
+		return art.Box{}, 0, 0
 	}
 	innerW := artW - 2
 	innerH := m.tabBodyHeight() - 2
-	rows = min(innerH-artMetaRows-1, innerW/2)
+	rows := min(innerH-artMetaRows-1, innerW/2)
 	if rows < 4 {
-		return 0, 0, 0, 0
+		return art.Box{}, 0, 0
 	}
-	cols = min(innerW, rows*2)
+	cols := min(innerW, rows*2)
 	x = 1 + (innerW-cols)/2
 	y = tabBodyTop + 1 + 1
-	return cols, rows, x, y
+	return art.Box{Cols: cols, Rows: rows, Cell: m.cell}, x, y
+}
+
+// setCellSize records the terminal's reported cell size and re-renders the
+// art if it changed, such as after a font size change.
+func (m *Model) setCellSize(cell image.Point) tea.Cmd {
+	if cell.X <= 0 || cell.Y <= 0 || cell == m.cell {
+		return nil
+	}
+	m.cell = cell
+	return m.refreshArt()
 }
 
 // showArt switches the art to t, or clears it when t is nil.
@@ -77,16 +94,16 @@ func (m *Model) showArt(t *domain.Track) tea.Cmd {
 
 // refreshArt re-renders for a new layout.
 func (m *Model) refreshArt() tea.Cmd {
-	cols, rows, _, _ := m.artBox()
-	if m.art.path == "" || m.art.missing || (cols == m.art.cols && rows == m.art.rows) {
+	box, _, _ := m.artBox()
+	if m.art.path == "" || m.art.missing || box == m.art.box {
 		return nil
 	}
 	return m.renderArt(m.art.img)
 }
 
 func (m *Model) renderArt(img image.Image) tea.Cmd {
-	cols, rows, _, _ := m.artBox()
-	if cols == 0 {
+	box, _, _ := m.artBox()
+	if box.Cols == 0 {
 		return nil
 	}
 	renderer, path := m.deps.Art, m.art.path
@@ -97,8 +114,8 @@ func (m *Model) renderArt(img image.Image) tea.Cmd {
 				return artMsg{path: path, err: err}
 			}
 		}
-		frame, err := renderer.Render(img, cols, rows)
-		return artMsg{path: path, img: img, frame: frame, err: err, cols: cols, rows: rows}
+		frame, err := renderer.Render(img, box)
+		return artMsg{path: path, img: img, frame: frame, err: err, box: box}
 	}
 }
 
@@ -114,7 +131,7 @@ func (m *Model) receiveArt(msg artMsg) tea.Cmd {
 		}
 		return nil
 	}
-	if cols, rows, _, _ := m.artBox(); cols != msg.cols || rows != msg.rows {
+	if box, _, _ := m.artBox(); box != msg.box {
 		m.art.img = msg.img
 		return m.renderArt(msg.img)
 	}
@@ -124,7 +141,7 @@ func (m *Model) receiveArt(msg artMsg) tea.Cmd {
 		cleanup = m.art.frame.Cleanup
 	}
 	m.art.img, m.art.frame = msg.img, &msg.frame
-	m.art.cols, m.art.rows = msg.cols, msg.rows
+	m.art.box = msg.box
 	return tea.Sequence(tea.Raw(msg.frame.Setup), tea.Raw(cleanup))
 }
 
@@ -159,7 +176,7 @@ func (m *Model) placeArt(seq artPlaceMsg) tea.Cmd {
 	if _, isQueue := m.tabs[m.active].(*queueTab); !isQueue || m.modal != nil || m.boot.active() || m.viz.full {
 		return nil
 	}
-	_, _, x, y := m.artBox()
+	_, x, y := m.artBox()
 	m.art.erase = f.Erase(x, y)
 	return tea.Raw(f.Place(x, y))
 }
@@ -177,12 +194,13 @@ func (a *artState) release() string {
 // artBody fills the queue tab's visual panel.
 func (m *Model) artBody(w, h int) []string {
 	st := m.st
-	cols, rows, _, _ := m.artBox()
+	box, _, _ := m.artBox()
+	cols, rows := box.Cols, box.Rows
 	pad := strings.Repeat(" ", max(0, (w-cols)/2))
 	out := []string{""}
 
 	switch {
-	case m.art.frame != nil && m.art.cols == cols && m.art.rows == rows:
+	case m.art.frame != nil && m.art.box == box:
 		for _, line := range m.art.frame.Lines {
 			out = append(out, pad+line)
 		}

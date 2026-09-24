@@ -50,7 +50,7 @@ real terminal and exercise the change.
 | `internal/audio/beepdec`, `ffmpegdec` | Decoder adapters. |
 | `internal/library` | Scanner, incremental cache, tag reader chain, search. |
 | `internal/library/ffprobe` | Fallback tag reader. |
-| `internal/art` | Album art loading and the kitty, iTerm2 and half-block renderers. |
+| `internal/art` | Album art loading and the kitty, iTerm2, sixel and half-block renderers. |
 | `internal/playlist` | M3U8 playlist store. |
 | `internal/config` | Config file and saved session state. |
 | `internal/theme` | Built-in palettes and custom JSON themes, mapped onto UI colour roles. |
