@@ -63,19 +63,35 @@ func (q *Queue[T]) Append(items ...T) {
 	q.items = append(q.items, items...)
 }
 
-// Remove deletes the item at i. Removing the current item clears the marker.
-func (q *Queue[T]) Remove(i int) {
-	if i < 0 || i >= len(q.items) {
-		return
+// RemoveIndices deletes the items at the given indices, which may be
+// unsorted or repeated. When the current item is among them, the item that
+// followed it becomes current, so playback can carry on from the same spot;
+// if nothing followed it, nothing is current. It reports whether the current
+// item was removed.
+func (q *Queue[T]) RemoveIndices(indices []int) bool {
+	sorted := slices.Clone(indices)
+	slices.Sort(sorted)
+	sorted = slices.Compact(sorted)
+
+	cur, removed := q.current, false
+	for _, i := range slices.Backward(sorted) {
+		if i < 0 || i >= len(q.items) {
+			continue
+		}
+		q.items = slices.Delete(q.items, i, i+1)
+		switch {
+		case i == cur:
+			removed = true
+		case i < cur:
+			cur--
+		}
 	}
-	q.items = slices.Delete(q.items, i, i+1)
 	q.planned = -1
-	switch {
-	case i == q.current:
-		q.current = -1
-	case i < q.current:
-		q.current--
+	if cur >= len(q.items) {
+		cur = -1
 	}
+	q.current = cur
+	return removed
 }
 
 // Clear empties the queue.

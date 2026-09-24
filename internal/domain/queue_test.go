@@ -96,9 +96,46 @@ func TestQueueEditDropsRandomPlan(t *testing.T) {
 	q.SetCurrent(0)
 	r := rand.New(rand.NewPCG(1, 1))
 	q.PeekNext(Modes{Random: true}, r)
-	q.Remove(1)
+	q.RemoveIndices([]int{1})
 	if q.planned != -1 {
-		t.Error("Remove kept a stale random plan")
+		t.Error("RemoveIndices kept a stale random plan")
+	}
+}
+
+func TestQueueRemoveIndices(t *testing.T) {
+	tests := []struct {
+		name        string
+		current     int
+		remove      []int
+		wantItems   []string
+		wantCurrent string
+		wantRemoved bool
+	}{
+		{name: "current passes to its follower", current: 1, remove: []int{1}, wantItems: []string{"a", "c", "d"}, wantCurrent: "c", wantRemoved: true},
+		{name: "run including current", current: 1, remove: []int{0, 1, 2}, wantItems: []string{"d"}, wantCurrent: "d", wantRemoved: true},
+		{name: "unsorted with duplicates", current: 2, remove: []int{3, 2, 2, 0}, wantItems: []string{"b"}, wantCurrent: "", wantRemoved: true},
+		{name: "last item has no follower", current: 3, remove: []int{3}, wantItems: []string{"a", "b", "c"}, wantCurrent: "", wantRemoved: true},
+		{name: "earlier item shifts current", current: 2, remove: []int{0}, wantItems: []string{"b", "c", "d"}, wantCurrent: "c"},
+		{name: "later item leaves current", current: 1, remove: []int{3}, wantItems: []string{"a", "b", "c"}, wantCurrent: "b"},
+		{name: "nothing current", current: -1, remove: []int{0}, wantItems: []string{"b", "c", "d"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			q := NewQueue("a", "b", "c", "d")
+			q.SetCurrent(tc.current)
+
+			removed := q.RemoveIndices(tc.remove)
+			if removed != tc.wantRemoved {
+				t.Errorf("removed current = %v, want %v", removed, tc.wantRemoved)
+			}
+			if !slices.Equal(q.Items(), tc.wantItems) {
+				t.Errorf("items = %v, want %v", q.Items(), tc.wantItems)
+			}
+			cur, _, ok := q.Current()
+			if (tc.wantCurrent == "") == ok || cur != tc.wantCurrent {
+				t.Errorf("current = %q (%v), want %q", cur, ok, tc.wantCurrent)
+			}
+		})
 	}
 }
 
@@ -128,9 +165,9 @@ func TestQueueKeepsCurrentThroughEdits(t *testing.T) {
 	q := NewQueue("a", "b", "c", "d")
 	q.SetCurrent(2)
 
-	q.Remove(0)
+	q.RemoveIndices([]int{0})
 	if cur, i, _ := q.Current(); cur != "c" || i != 1 {
-		t.Fatalf("after Remove current = %q@%d, want c@1", cur, i)
+		t.Fatalf("after RemoveIndices current = %q@%d, want c@1", cur, i)
 	}
 
 	q.Swap(1, 0)
@@ -143,8 +180,14 @@ func TestQueueKeepsCurrentThroughEdits(t *testing.T) {
 		t.Fatalf("after Shuffle current = %q, want c", cur)
 	}
 
-	q.Remove(q.CurrentIndex())
-	if _, _, ok := q.Current(); ok {
-		t.Fatal("removing current should clear it")
+	// Removing the current item hands current to the one that followed it.
+	i := q.CurrentIndex()
+	var follower string
+	if next, ok := q.At(i + 1); ok {
+		follower = next
+	}
+	q.RemoveIndices([]int{i})
+	if cur, _, ok := q.Current(); (follower != "") != ok || cur != follower {
+		t.Fatalf("after removing current, current = %q (%v), want follower %q", cur, ok, follower)
 	}
 }

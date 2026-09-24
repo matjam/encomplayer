@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -64,14 +63,13 @@ func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 			return true, m.playIndex(l.Cursor())
 		}
 	case keymap.Delete:
-		idx := l.Targets()
-		slices.Reverse(idx)
-		for _, i := range idx {
-			m.queue.Remove(i)
-		}
 		cursor := l.Cursor()
+		removedCurrent := m.queue.RemoveIndices(l.Targets())
 		m.syncQueue()
 		l.SetCursor(cursor)
+		if removedCurrent {
+			return true, m.currentDeleted()
+		}
 	case keymap.DeleteAll:
 		m.queue.Clear()
 		m.syncQueue()
