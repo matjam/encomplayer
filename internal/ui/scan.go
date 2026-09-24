@@ -65,12 +65,13 @@ func (m *Model) receiveCache(msg cacheLoadedMsg) tea.Cmd {
 	if msg.err != nil {
 		m.status.errorf("LIBRARY CACHE UNREADABLE: %v", msg.err)
 	}
+	var shown tea.Cmd
 	if msg.snap != nil && len(msg.snap.Tracks) > 0 {
 		m.snapshot = msg.snap
-		m.applySnapshot(msg.snap)
+		shown = m.applySnapshot(msg.snap)
 		m.boot.scanDone = true
 	}
-	return m.startScan(msg.root, false)
+	return tea.Batch(shown, m.startScan(msg.root, m.deps.Startup.FullRescan))
 }
 
 // startScan syncs root with disk in the background. full rereads every
@@ -148,8 +149,9 @@ func (m *Model) finishScan(msg scanDoneMsg) tea.Cmd {
 	}
 
 	m.snapshot = msg.snap
+	var shown tea.Cmd
 	if !background || msg.changes.Any() {
-		m.applySnapshot(msg.snap)
+		shown = m.applySnapshot(msg.snap)
 	}
 
 	c := msg.changes
@@ -161,14 +163,20 @@ func (m *Model) finishScan(msg scanDoneMsg) tea.Cmd {
 	case !background:
 		m.status.infof("sector indexed: %d tracks", len(msg.snap.Tracks))
 	}
-	return m.scheduleRescan(msg.root)
+	return tea.Batch(shown, m.scheduleRescan(msg.root))
 }
 
-// applySnapshot replaces the library and refreshes every view of it.
-func (m *Model) applySnapshot(s *library.Snapshot) {
+// applySnapshot replaces the library and refreshes every view of it. The
+// first library to arrive also starts a --shuffle run.
+func (m *Model) applySnapshot(s *library.Snapshot) tea.Cmd {
 	m.lib = library.New(s.Root, s.Tracks)
 	m.restoreQueue()
 	m.setLibrary(m.lib)
+	if m.pendingShuffle && len(m.lib.Tracks()) > 0 {
+		m.pendingShuffle = false
+		return m.playShuffled(m.lib.Tracks())
+	}
+	return nil
 }
 
 // scheduleRescan arms the periodic sync. Network mounts get a longer

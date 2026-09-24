@@ -80,6 +80,11 @@ func newTestModel(t *testing.T) (*Model, *fakePlayer) {
 // the way a relaunch does.
 func newTestModelAt(t *testing.T, statePath string) (*Model, *fakePlayer) {
 	t.Helper()
+	return buildTestModel(t, statePath, Startup{})
+}
+
+func buildTestModel(t *testing.T, statePath string, startup Startup) (*Model, *fakePlayer) {
+	t.Helper()
 	fp := &fakePlayer{volume: 70, ended: make(chan uint64)}
 	m := New(context.Background(), Deps{
 		Player:      fp,
@@ -94,6 +99,7 @@ func newTestModelAt(t *testing.T, statePath string) (*Model, *fakePlayer) {
 			Themes: filepath.Join(filepath.Dir(statePath), "themes"),
 		},
 		Themes:  theme.NewStore(filepath.Join(filepath.Dir(statePath), "themes")),
+		Startup: startup,
 		Version: "test",
 	})
 	m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})

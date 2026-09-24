@@ -66,14 +66,39 @@ func run(args []string) error {
 
 	paths.Config = opts.config
 	cfg, err := config.Load(paths.Config)
-	if opts.version {
-		// A broken config should not stop --version; the banner falls back
-		// to defaults.
+
+	// Informational commands run even with a broken config file, falling
+	// back to defaults, so they stay useful for diagnosing it.
+	tty := term.IsTerminal(os.Stdout.Fd())
+	switch {
+	case opts.version:
 		showVersion(opts, cfg, paths)
+		return nil
+	case opts.paths:
+		printPaths(os.Stdout, paths)
+		return nil
+	case opts.listThemes:
+		current := cfg.Theme
+		if opts.theme != "" {
+			current = opts.theme
+		}
+		printThemes(os.Stdout, tty, theme.NewStore(paths.Themes), current)
+		return nil
+	case opts.reload:
+		pid, err := signalReload(pidPath(paths))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("reload sent to encomplayer (pid %d)\n", pid)
 		return nil
 	}
 	if err != nil {
 		return err
+	}
+	if opts.theme != "" {
+		if _, err := theme.NewStore(paths.Themes).Load(opts.theme); err != nil {
+			return usageError{fmt.Errorf("--theme: %w; see --list-themes", err)}
+		}
 	}
 
 	km, err := keymap.WithOverrides(cfg.Keybinds)
@@ -133,16 +158,28 @@ func run(args []string) error {
 		ArtProtocol: protocol,
 		Formats:     formats,
 		Themes:      theme.NewStore(paths.Themes),
-		Config:      cfg,
-		State:       state,
-		Paths:       paths,
-		MusicDir:    musicDir(opts.musicDir, cfg),
-		Version:     version,
+		Startup: ui.Startup{
+			Theme:      opts.theme,
+			NoMouse:    opts.noMouse,
+			FullRescan: opts.rescan,
+			Shuffle:    opts.shuffle,
+		},
+		Config:   cfg,
+		State:    state,
+		Paths:    paths,
+		MusicDir: musicDir(opts.musicDir, cfg),
+		Version:  version,
 	})
 
 	program := tea.NewProgram(model, tea.WithContext(ctx))
 	stopReload := notifyReload(func() { program.Send(ui.ReloadMsg{}) })
 	defer stopReload()
+
+	// --reload finds the player through this file. Without it only
+	// --reload is lost, so a failure is not fatal.
+	if removePID, err := writePID(pidPath(paths)); err == nil {
+		defer removePID()
+	}
 
 	if _, err := program.Run(); err != nil && !errors.Is(err, tea.ErrProgramKilled) {
 		return fmt.Errorf("run ui: %w", err)
@@ -153,6 +190,9 @@ func run(args []string) error {
 // showVersion prints the version banner using the configured theme.
 func showVersion(opts options, cfg config.Config, paths config.Paths) {
 	tty := term.IsTerminal(os.Stdout.Fd())
+	if opts.theme != "" {
+		cfg.Theme = opts.theme
+	}
 	b := banner{version: version}
 	if tty {
 		t, err := theme.NewStore(paths.Themes).Load(cfg.Theme)
