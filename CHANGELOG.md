@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/matjam/encomplayer/compare/v1.3.0...v1.4.0) (2026-09-24)
+
+
+### Features
+
+* visualizer suite with a full-screen view and a plugin API ([b5298e4](https://github.com/matjam/encomplayer/commit/b5298e4e5d9f915f28740eca4f4743f02ed76b1b))
+
 ## [1.3.0](https://github.com/matjam/encomplayer/compare/v1.2.0...v1.3.0) (2026-09-24)
 
 
