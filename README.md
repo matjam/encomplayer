@@ -67,8 +67,12 @@ sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/enc
 
 ```sh
 v=1.2.0
-sudo pacman -U https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
+curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
+sudo pacman -U ./encomplayer-$v-1-x86_64.pkg.tar.zst
 ```
+
+Download the file first: `pacman -U <url>` insists on a detached signature
+for remote packages, and these are not signed.
 
 On ARM, use `arm64` for the `.deb` and `aarch64` for the `.rpm` and Arch
 package. Windows users can download the `.zip` from the
