@@ -72,6 +72,38 @@ func (m *Model) advance(auto bool) tea.Cmd {
 	return m.startCurrent()
 }
 
+// currentDeleted continues after the current track was deleted from the
+// queue. The queue has already made the following track current. Playback
+// moves on to it, as next-track would; a paused player stops there so p
+// starts it; a stopped one just keeps the new current track.
+func (m *Model) currentDeleted() tea.Cmd {
+	m.resumeAt = 0
+	switch m.deps.Player.State() {
+	case audio.Paused:
+		m.deps.Player.Stop()
+		m.playGen = 0
+		m.saveState()
+		return m.showArt(nil)
+	case audio.Stopped:
+		return nil
+	}
+
+	_, _, hasNext := m.queue.Current()
+	switch {
+	case m.modes.Random && m.queue.Len() > 0:
+		return m.advance(false)
+	case hasNext:
+		return m.startCurrent()
+	case m.modes.Repeat && m.queue.Len() > 0:
+		return m.playIndex(0)
+	default:
+		m.deps.Player.Stop()
+		m.playGen = 0
+		m.saveState()
+		return m.showArt(nil)
+	}
+}
+
 func (m *Model) retreat() tea.Cmd {
 	if _, ok := m.queue.Retreat(m.modes); !ok {
 		return nil
