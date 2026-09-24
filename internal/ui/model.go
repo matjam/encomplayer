@@ -56,6 +56,10 @@ type Model struct {
 	resumeAt  time.Duration
 	lastSaved time.Time
 
+	// pendingShuffle is set by --shuffle and consumed once the library is
+	// first available.
+	pendingShuffle bool
+
 	tabs   []tab
 	active int
 
@@ -92,7 +96,12 @@ func New(ctx context.Context, deps Deps) *Model {
 	if m.sizes == (config.Layout{}) {
 		m.sizes = config.DefaultLayout()
 	}
-	if err := m.applyTheme(deps.Config.Theme); err != nil {
+	startTheme := deps.Config.Theme
+	if deps.Startup.Theme != "" {
+		startTheme = deps.Startup.Theme
+	}
+	m.pendingShuffle = deps.Startup.Shuffle
+	if err := m.applyTheme(startTheme); err != nil {
 		m.status.errorf("%v", err)
 	}
 	deps.Player.SetVolume(deps.State.Volume)

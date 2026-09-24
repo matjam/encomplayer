@@ -28,8 +28,13 @@ type mouseState struct {
 	lastClick time.Time
 }
 
+// mouseEnabled combines the config setting with a per-run --no-mouse.
+func (m *Model) mouseEnabled() bool {
+	return m.deps.Config.EnableMouse && !m.deps.Startup.NoMouse
+}
+
 func (m *Model) handleMouse(msg tea.MouseMsg) tea.Cmd {
-	if !m.deps.Config.EnableMouse {
+	if !m.mouseEnabled() {
 		return nil
 	}
 	switch msg := msg.(type) {

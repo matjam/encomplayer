@@ -16,7 +16,7 @@ import (
 func (m *Model) View() tea.View {
 	var v tea.View
 	v.AltScreen = true
-	if m.deps.Config.EnableMouse {
+	if m.mouseEnabled() {
 		// Cell motion reports movement only while a button is held, which
 		// is exactly what dragging a divider needs.
 		v.MouseMode = tea.MouseModeCellMotion

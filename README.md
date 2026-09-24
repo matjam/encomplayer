@@ -8,13 +8,27 @@ encomplayer [options] [music-folder]
 
   -a, --art string      album art protocol for this run: auto, kitty, iterm, blocks or off
   -c, --config string   config file (default ~/.config/encomplayer/config.json)
-  -h, --help            show help and exit
+  -h, --help            show this help and exit
+      --list-themes     list built-in and custom themes and exit
+      --no-mouse        leave the mouse to the terminal for this run, e.g. to select text
+      --paths           print where config, themes, playlists, cache and state live, and exit
+      --reload          make the running player reread its config and theme, and exit
+  -r, --rescan          reread every file's tags at startup instead of trusting the cache
+  -s, --shuffle         start playing the whole library shuffled
+  -t, --theme string    theme for this run (see --list-themes)
   -v, --version         print the version and exit
 ```
 
 The music folder comes from the argument, then `music_dir` in the config, then
-`~/Music`. On a terminal, `--version` shows a diagnostics banner (terminal,
-colour depth, album art protocol, decoders); piped, it prints one plain line.
+`~/Music`.
+
+- `--art`, `--theme`, `--no-mouse`, `--shuffle` and `--rescan` apply to one
+  run and are never written to the config file.
+- `--reload` signals the running player (found through a PID file in the state
+  directory) to reapply `config.json`, including its theme. It needs `SIGUSR1`,
+  so on Windows use `:reload` inside the player.
+- On a terminal, `--version` shows a diagnostics banner and `--list-themes`
+  shows a colour swatch per theme; piped, both print plain text for scripts.
 
 ## Install
 
