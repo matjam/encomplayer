@@ -10,12 +10,43 @@ import (
 	"github.com/matjam/encomplayer/internal/art"
 )
 
-// recordingRenderer remembers the boxes it was asked to fill.
+// recordingRenderer remembers the boxes it was asked to fill, and draws as an
+// overlay protocol does.
 type recordingRenderer struct{ boxes []art.Box }
 
 func (r *recordingRenderer) Render(_ image.Image, box art.Box) (art.Frame, error) {
 	r.boxes = append(r.boxes, box)
-	return art.Frame{Lines: make([]string, box.Rows)}, nil
+	return art.Frame{
+		Lines: make([]string, box.Rows),
+		Place: func(x, y int) string { return "place" },
+		Erase: func(x, y int) string { return "erase" },
+	}, nil
+}
+
+func TestStaleArtIsNotPlaced(t *testing.T) {
+	m, _ := newTestModel(t)
+	m.deps.Art = &recordingRenderer{}
+	m.Update(tea.WindowSizeMsg{Width: 160, Height: 50})
+	m.art.path, m.art.img = "cover.flac", image.NewRGBA(image.Rect(0, 0, 4, 4))
+	m.receiveArt(m.renderArt(m.art.img)().(artMsg))
+
+	steps := []struct {
+		name      string
+		footer    int
+		wantPlace bool
+	}{
+		{name: "frame fits the box", footer: m.sizes.FooterRows, wantPlace: true},
+		{name: "divider dragged, frame is stale", footer: m.sizes.FooterRows + 10, wantPlace: false},
+		{name: "dragged back", footer: m.sizes.FooterRows, wantPlace: true},
+	}
+	for _, s := range steps {
+		m.sizes.FooterRows = s.footer
+		m.layout()
+		m.art.placeSeq++
+		if got := m.placeArt(artPlaceMsg(m.art.placeSeq)) != nil; got != s.wantPlace {
+			t.Errorf("%s: placed = %t, want %t", s.name, got, s.wantPlace)
+		}
+	}
 }
 
 func TestCellSizeReportRerendersArt(t *testing.T) {

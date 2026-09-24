@@ -176,7 +176,12 @@ func (m *Model) placeArt(seq artPlaceMsg) tea.Cmd {
 	if _, isQueue := m.tabs[m.active].(*queueTab); !isQueue || m.modal != nil || m.boot.active() || m.viz.full {
 		return nil
 	}
-	_, x, y := m.artBox()
+	// A frame rendered for another box, such as while a divider is dragged,
+	// would draw at the wrong size and position. The re-render places it.
+	box, x, y := m.artBox()
+	if box != m.art.box {
+		return nil
+	}
 	m.art.erase = f.Erase(x, y)
 	return tea.Raw(f.Place(x, y))
 }
