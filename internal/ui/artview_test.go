@@ -2,7 +2,10 @@ package ui
 
 import (
 	"image"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 
@@ -38,6 +41,21 @@ func messages(cmd tea.Cmd) []tea.Msg {
 		out = append(out, messages(c)...)
 	}
 	return out
+}
+
+func TestRestoredTrackShowsArt(t *testing.T) {
+	statePath := filepath.Join(t.TempDir(), "state.json")
+	playAndQuit(t, statePath, 30*time.Second)
+
+	deps := testDeps(statePath, Startup{})
+	deps.Art = &recordingRenderer{}
+	m, cmd := startTestModel(deps)
+	if !strings.HasSuffix(m.art.path, "02.mp3") || !m.art.loading {
+		t.Fatalf("art = %q (loading %t), want the restored 02.mp3 loading", m.art.path, m.art.loading)
+	}
+	if cmd == nil {
+		t.Error("restoring the session returned no command to load its art")
+	}
 }
 
 func TestDeviceAttributesChooseSixel(t *testing.T) {

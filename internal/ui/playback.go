@@ -208,10 +208,11 @@ func (m *Model) resolveTracks(paths []string) []domain.Track {
 	return out
 }
 
-// restoreQueue loads the queue saved by the previous session, once.
-func (m *Model) restoreQueue() {
+// restoreQueue loads the queue saved by the previous session, once, and
+// shows the art of the track it was on.
+func (m *Model) restoreQueue() tea.Cmd {
 	if m.restored {
-		return
+		return nil
 	}
 	m.restored = true
 
@@ -235,7 +236,10 @@ func (m *Model) restoreQueue() {
 		m.resumeAt = time.Duration(m.deps.State.PositionSeconds * float64(time.Second))
 	}
 	m.queueList.SetItems(m.queue.Items())
-	if _, i, ok := m.queue.Current(); ok {
-		m.queueList.SetCursor(i)
+	t, i, ok := m.queue.Current()
+	if !ok {
+		return nil
 	}
+	m.queueList.SetCursor(i)
+	return m.showArt(&t)
 }
