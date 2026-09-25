@@ -12,8 +12,8 @@ rmpc's keybindings. No MPD required.
 - Browses by folder, artist, album artist, album and genre, with search.
 - Queue with repeat, random, single and consume modes; M3U8 playlists.
 - Album art in kitty and Ghostty (Unicode placeholders), iTerm2 and WezTerm
-  (inline images), foot (sixel), and half-block rendering in any truecolor
-  terminal.
+  (inline images), sixel in foot and any terminal that reports sixel support
+  (whatever `TERM` says), and half-block rendering in any truecolor terminal.
 - Instant startup from a cache, background sync, and periodic rescans that
   pick up files added while it runs.
 - 22 visualizers in the SIGNAL strip or full screen, from Winamp-style

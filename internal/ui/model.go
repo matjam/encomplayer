@@ -45,6 +45,7 @@ type Model struct {
 	width, height int
 	cell          image.Point // pixels per cell; zero until the terminal reports it
 	noScrollOptim bool        // renderer scroll optimisation is off for overlay art
+	termSixel     bool        // the terminal reported sixel support
 
 	lib       *library.Library
 	snapshot  *library.Snapshot
@@ -129,7 +130,7 @@ func New(ctx context.Context, deps Deps) *Model {
 
 // Init starts the boot sequence, the first scan and the background loops.
 func (m *Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{m.tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize, requestCellSize}
+	cmds := []tea.Cmd{m.tick(), bootTick(), m.waitEnded(), tea.RequestWindowSize, requestCellSize, requestDeviceAttributes}
 	if m.deps.MusicDir != "" {
 		cmds = append(cmds, m.loadCache(m.deps.MusicDir))
 	} else {
@@ -169,6 +170,9 @@ func (m *Model) update(msg tea.Msg) tea.Cmd {
 
 	case uv.CellSizeEvent:
 		return m.setCellSize(image.Pt(msg.Width, msg.Height))
+
+	case uv.PrimaryDeviceAttributesEvent:
+		return m.setDeviceAttributes(msg)
 
 	case tickMsg:
 		m.position, m.length = m.deps.Player.Progress()

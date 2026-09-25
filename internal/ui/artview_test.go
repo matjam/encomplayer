@@ -40,6 +40,40 @@ func messages(cmd tea.Cmd) []tea.Msg {
 	return out
 }
 
+func TestDeviceAttributesChooseSixel(t *testing.T) {
+	// foot run as xterm-256color: nothing in the environment names it.
+	for _, k := range []string{"TMUX", "KITTY_WINDOW_ID", "TERM_PROGRAM", "LC_TERMINAL"} {
+		t.Setenv(k, "")
+	}
+	t.Setenv("TERM", "xterm-256color")
+
+	tests := []struct {
+		name    string
+		setting string
+		attrs   []int
+		want    art.Protocol
+	}{
+		{name: "auto without sixel", setting: art.Auto, attrs: []int{62, 22}, want: art.Blocks},
+		{name: "auto with sixel", setting: art.Auto, attrs: []int{62, 4, 22}, want: art.Sixel},
+		{name: "empty setting means auto", setting: "", attrs: []int{4}, want: art.Sixel},
+		{name: "explicit blocks stays", setting: art.Blocks, attrs: []int{4}, want: art.Blocks},
+		{name: "off stays off", setting: art.Off, attrs: []int{4}, want: art.Off},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m, _ := newTestModel(t)
+			m.applyArt(tc.setting)
+			m.update(uv.PrimaryDeviceAttributesEvent(tc.attrs))
+			if m.deps.ArtProtocol != tc.want {
+				t.Errorf("protocol = %q, want %q", m.deps.ArtProtocol, tc.want)
+			}
+			if got := m.update(uv.PrimaryDeviceAttributesEvent(tc.attrs)); got != nil {
+				t.Error("a repeated reply changed the art again")
+			}
+		})
+	}
+}
+
 func TestOverlayArtTurnsOffScrollOptimization(t *testing.T) {
 	m, _ := newTestModel(t)
 	overlay := &art.Frame{Place: func(x, y int) string { return "" }, Erase: func(x, y int) string { return "" }}

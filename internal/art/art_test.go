@@ -12,9 +12,10 @@ import (
 
 func TestDetect(t *testing.T) {
 	tests := []struct {
-		name string
-		env  map[string]string
-		want Protocol
+		name  string
+		env   map[string]string
+		sixel bool // the terminal reported sixel in its device attributes
+		want  Protocol
 	}{
 		{name: "kitty", env: map[string]string{"TERM": "xterm-kitty", "KITTY_WINDOW_ID": "1"}, want: Kitty},
 		{name: "ghostty", env: map[string]string{"TERM_PROGRAM": "ghostty"}, want: Kitty},
@@ -25,10 +26,15 @@ func TestDetect(t *testing.T) {
 		{name: "footlike name", env: map[string]string{"TERM": "football"}, want: Blocks},
 		{name: "tmux inside kitty", env: map[string]string{"TERM": "tmux-256color", "TMUX": "/tmp/x", "KITTY_WINDOW_ID": "1"}, want: Blocks},
 		{name: "unknown", env: map[string]string{"TERM": "xterm-256color"}, want: Blocks},
+		{name: "foot as xterm reporting sixel", env: map[string]string{"TERM": "xterm-256color"}, sixel: true, want: Sixel},
+		{name: "wezterm reporting sixel keeps iterm", env: map[string]string{"TERM_PROGRAM": "WezTerm"}, sixel: true, want: ITerm},
+		{name: "kitty reporting sixel keeps kitty", env: map[string]string{"KITTY_WINDOW_ID": "1"}, sixel: true, want: Kitty},
+		{name: "tmux reporting sixel", env: map[string]string{"TERM": "tmux-256color", "TMUX": "/tmp/x"}, sixel: true, want: Sixel},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Detect(func(k string) string { return tc.env[k] }); got != tc.want {
+			term := Terminal{Getenv: func(k string) string { return tc.env[k] }, Sixel: tc.sixel}
+			if got := Detect(term); got != tc.want {
 				t.Errorf("Detect = %q, want %q", got, tc.want)
 			}
 		})

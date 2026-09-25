@@ -127,7 +127,7 @@ func run(args []string) error {
 	if opts.art != "" {
 		artSetting = opts.art
 	}
-	renderer, protocol, err := art.Choose(artSetting, os.Getenv)
+	renderer, protocol, err := art.Choose(artSetting, art.Terminal{Getenv: os.Getenv})
 	if err != nil {
 		return err
 	}
@@ -155,6 +155,7 @@ func run(args []string) error {
 		Keymap:      km,
 		Art:         renderer,
 		ArtProtocol: protocol,
+		ArtSetting:  artSetting,
 		Formats:     formats,
 		Themes:      theme.NewStore(paths.Themes),
 		Startup: ui.Startup{

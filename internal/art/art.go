@@ -64,11 +64,11 @@ type Renderer interface {
 type Renderers = registry.Registry[Renderer]
 
 // Choose resolves a protocol setting to a renderer. "auto" or "" detects the
-// terminal from getenv, and "off" returns a nil renderer.
-func Choose(setting string, getenv func(string) string) (Renderer, Protocol, error) {
+// best protocol for term, and "off" returns a nil renderer.
+func Choose(setting string, term Terminal) (Renderer, Protocol, error) {
 	protocol := strings.ToLower(setting)
 	if protocol == "" || protocol == Auto {
-		protocol = Detect(getenv)
+		protocol = Detect(term)
 	}
 	if protocol == Off {
 		return nil, Off, nil

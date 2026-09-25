@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -65,6 +67,30 @@ func (m *Model) artBox() (box art.Box, x, y int) {
 	x = 1 + (innerW-cols)/2
 	y = tabBodyTop + 1 + 1
 	return art.Box{Cols: cols, Rows: rows, Cell: m.cell}, x, y
+}
+
+// requestDeviceAttributes asks the terminal for its primary device attributes
+// (DA1), which say whether it supports sixel. The reply arrives as a
+// uv.PrimaryDeviceAttributesEvent.
+var requestDeviceAttributes = tea.Raw(ansi.RequestPrimaryDeviceAttributes)
+
+// terminal describes the terminal for choosing an art protocol.
+func (m *Model) terminal() art.Terminal {
+	return art.Terminal{Getenv: os.Getenv, Sixel: m.termSixel}
+}
+
+// setDeviceAttributes records whether the terminal supports sixel and, if
+// the art setting is automatic, switches to sixel when that is now the best
+// choice. TERM alone cannot tell: foot is often run as xterm-256color.
+func (m *Model) setDeviceAttributes(attrs []int) tea.Cmd {
+	if m.termSixel || !slices.Contains(attrs, art.SixelAttribute) {
+		return nil
+	}
+	m.termSixel = true
+	if _, protocol, err := art.Choose(m.deps.ArtSetting, m.terminal()); err != nil || protocol == m.deps.ArtProtocol {
+		return nil
+	}
+	return m.applyArt(m.deps.ArtSetting)
 }
 
 // setCellSize records the terminal's reported cell size and re-renders the
