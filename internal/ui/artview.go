@@ -162,6 +162,13 @@ func (m *Model) scheduleArtPlacement() tea.Cmd {
 	if erase != "" {
 		cmds = append(cmds, tea.Raw(erase))
 	}
+	// Terminals such as foot move overlay images whenever the renderer
+	// scrolls any region of the screen, so the art would drift with the
+	// visualiser. Redraw moved lines instead while overlay art is loaded.
+	if overlay := m.art.frame != nil && m.art.frame.Place != nil; overlay != m.noScrollOptim {
+		m.noScrollOptim = overlay
+		cmds = append(cmds, tea.SetScrollOptimization(!overlay))
+	}
 	if m.art.frame != nil && m.art.frame.Place != nil {
 		cmds = append(cmds, tea.Tick(placeDelay, func(time.Time) tea.Msg { return artPlaceMsg(seq) }))
 	}

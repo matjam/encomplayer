@@ -40,6 +40,10 @@ type renderer interface {
 	// setWidthMethod sets the method for calculating the width of the terminal.
 	setWidthMethod(ansi.Method)
 
+	// setScrollOptim turns hard scroll optimisation on or off. EncomPlayer
+	// addition.
+	setScrollOptim(bool)
+
 	// resize notify the renderer of a terminal resize.
 	resize(int, int)
 

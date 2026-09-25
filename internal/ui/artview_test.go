@@ -23,6 +23,54 @@ func (r *recordingRenderer) Render(_ image.Image, box art.Box) (art.Frame, error
 	}, nil
 }
 
+// messages runs cmd and returns the messages it produces, expanding batches.
+func messages(cmd tea.Cmd) []tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	msg := cmd()
+	batch, ok := msg.(tea.BatchMsg)
+	if !ok {
+		return []tea.Msg{msg}
+	}
+	var out []tea.Msg
+	for _, c := range batch {
+		out = append(out, messages(c)...)
+	}
+	return out
+}
+
+func TestOverlayArtTurnsOffScrollOptimization(t *testing.T) {
+	m, _ := newTestModel(t)
+	overlay := &art.Frame{Place: func(x, y int) string { return "" }, Erase: func(x, y int) string { return "" }}
+	inline := &art.Frame{}
+
+	steps := []struct {
+		name  string
+		frame *art.Frame
+		want  tea.Msg // nil means no change is sent
+	}{
+		{name: "overlay art loads", frame: overlay, want: tea.SetScrollOptimization(false)()},
+		{name: "still overlay art", frame: overlay},
+		{name: "inline art loads", frame: inline, want: tea.SetScrollOptimization(true)()},
+		{name: "art cleared", frame: nil},
+		{name: "overlay art again", frame: overlay, want: tea.SetScrollOptimization(false)()},
+		{name: "art cleared again", frame: nil, want: tea.SetScrollOptimization(true)()},
+	}
+	for _, s := range steps {
+		m.art.frame = s.frame
+		var got tea.Msg
+		for _, msg := range messages(m.scheduleArtPlacement()) {
+			if msg == tea.SetScrollOptimization(true)() || msg == tea.SetScrollOptimization(false)() {
+				got = msg
+			}
+		}
+		if got != s.want {
+			t.Errorf("%s: sent %#v, want %#v", s.name, got, s.want)
+		}
+	}
+}
+
 func TestStaleArtIsNotPlaced(t *testing.T) {
 	m, _ := newTestModel(t)
 	m.deps.Art = &recordingRenderer{}

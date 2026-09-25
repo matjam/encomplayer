@@ -55,6 +55,7 @@ real terminal and exercise the change.
 | `internal/config` | Config file and saved session state. |
 | `internal/theme` | Built-in palettes and custom JSON themes, mapped onto UI colour roles. |
 | `internal/ui` | bubbletea model, tabs, modals, config screen, view. Colours come from the model's `styles`, never package globals. |
+| `internal/tea` | Copy of bubbletea, and bubbles' `textinput` and its helpers, with our changes marked. See its `README.md` before touching it. |
 
 ## Conventions
 
@@ -71,6 +72,12 @@ real terminal and exercise the change.
 - Keybinding defaults follow rmpc. EncomPlayer-only actions go on keys rmpc
   leaves free, and are marked as additions in `internal/keymap`.
 - Files stay under about 300 lines. Tests are table-driven and co-located.
+  Code copied from upstream into `internal/tea` keeps upstream's layout and
+  style; mark every change there `EncomPlayer addition` so updates can
+  reapply it.
+- Import bubbletea and textinput from `internal/tea`, never from
+  `charm.land`. Do not add `replace` directives: they break
+  `go install ...@latest`.
 - Errors are wrapped with `%w` and surfaced once, in the status line.
 - Workflows pin every action to a full commit SHA with the version in a
   trailing comment (`uses: actions/checkout@<sha> # v7.0.1`), and pin tools

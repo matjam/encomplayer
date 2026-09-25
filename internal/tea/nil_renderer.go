@@ -47,6 +47,9 @@ func (n nilRenderer) setSyncdUpdates(bool) {}
 // setWidthMethod implements the Renderer interface.
 func (n nilRenderer) setWidthMethod(ansi.Method) {}
 
+// setScrollOptim implements the Renderer interface. EncomPlayer addition.
+func (n nilRenderer) setScrollOptim(bool) {}
+
 // onMouse implements the Renderer interface.
 func (n nilRenderer) onMouse(MouseMsg) Cmd {
 	return nil

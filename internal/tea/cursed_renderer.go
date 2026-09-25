@@ -35,6 +35,7 @@ type cursedRenderer struct {
 	starting      bool // indicates whether the renderer is starting after being stopped
 	pendingErase  bool // an scr.Erase() is pending and hasn't been drained by flush yet
 	noInput       bool // whether input is disabled, in which case keyboard enhancement queries are pointless
+	noScrollOptim bool // EncomPlayer: scroll optimisation turned off by SetScrollOptimization
 }
 
 var _ renderer = &cursedRenderer{}
@@ -651,8 +652,22 @@ func reset(s *cursedRenderer) {
 	}
 	scr.SetBackspace(s.backspace)
 	scr.SetMapNewline(s.mapnl)
-	scr.SetScrollOptim(runtime.GOOS != "windows") // disable scroll optimization on Windows due to bugs in some terminals
+	scr.SetScrollOptim(scrollOptim(s)) // disable scroll optimization on Windows due to bugs in some terminals
 	s.scr = scr
+}
+
+// scrollOptim reports whether hard scroll optimisation should be on.
+// EncomPlayer: SetScrollOptimization can turn it off.
+func scrollOptim(s *cursedRenderer) bool {
+	return runtime.GOOS != "windows" && !s.noScrollOptim
+}
+
+// setScrollOptim implements renderer. EncomPlayer addition.
+func (s *cursedRenderer) setScrollOptim(on bool) {
+	s.mu.Lock()
+	s.noScrollOptim = !on
+	s.scr.SetScrollOptim(scrollOptim(s))
+	s.mu.Unlock()
 }
 
 // setColorProfile implements renderer.

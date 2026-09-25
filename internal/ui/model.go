@@ -44,6 +44,7 @@ type Model struct {
 
 	width, height int
 	cell          image.Point // pixels per cell; zero until the terminal reports it
+	noScrollOptim bool        // renderer scroll optimisation is off for overlay art
 
 	lib       *library.Library
 	snapshot  *library.Snapshot
