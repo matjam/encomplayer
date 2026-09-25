@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/matjam/encomplayer/compare/v1.4.0...v1.5.0) (2026-09-25)
+
+
+### Features
+
+* sixel album art for foot ([#17](https://github.com/matjam/encomplayer/issues/17)) ([b554fa3](https://github.com/matjam/encomplayer/commit/b554fa3fd08302bd26352f2eb0efa219f245d4fa))
+* version-free package downloads and an up-to-date README ([#19](https://github.com/matjam/encomplayer/issues/19)) ([ee49c4b](https://github.com/matjam/encomplayer/commit/ee49c4b32699a661f7845cac34a02959ba1fbd86))
+
 ## [1.4.0](https://github.com/matjam/encomplayer/compare/v1.3.0...v1.4.0) (2026-09-24)
 
 
