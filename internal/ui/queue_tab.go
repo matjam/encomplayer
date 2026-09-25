@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // queueTab shows album art beside the play queue, like rmpc's Queue tab.

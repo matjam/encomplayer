@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 const (
@@ -144,8 +143,7 @@ func (m *Model) finishScan(msg scanDoneMsg) tea.Cmd {
 
 	if msg.err != nil {
 		m.status.errorf("SCAN FAILED: %v", msg.err)
-		m.restoreQueue()
-		return m.scheduleRescan(msg.root)
+		return tea.Batch(m.restoreQueue(), m.scheduleRescan(msg.root))
 	}
 
 	m.snapshot = msg.snap
@@ -170,13 +168,13 @@ func (m *Model) finishScan(msg scanDoneMsg) tea.Cmd {
 // first library to arrive also starts a --shuffle run.
 func (m *Model) applySnapshot(s *library.Snapshot) tea.Cmd {
 	m.lib = library.New(s.Root, s.Tracks)
-	m.restoreQueue()
+	restored := m.restoreQueue()
 	m.setLibrary(m.lib)
 	if m.pendingShuffle && len(m.lib.Tracks()) > 0 {
 		m.pendingShuffle = false
-		return m.playShuffled(m.lib.Tracks())
+		return tea.Batch(restored, m.playShuffled(m.lib.Tracks()))
 	}
-	return nil
+	return restored
 }
 
 // scheduleRescan arms the periodic sync. Network mounts get a longer

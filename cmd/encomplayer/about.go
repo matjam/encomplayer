@@ -172,9 +172,10 @@ func printVersion(w io.Writer, tty bool, b banner) {
 	lipgloss.Fprintln(w, strings.Join(out, "\n"))
 }
 
-// artProtocolName reports the album art protocol a run would use.
+// artProtocolName reports the album art protocol a run would start with. A
+// run can still switch to sixel once the terminal reports support for it.
 func artProtocolName(setting string, getenv func(string) string) string {
-	_, protocol, err := art.Choose(setting, getenv)
+	_, protocol, err := art.Choose(setting, art.Terminal{Getenv: getenv})
 	if err != nil {
 		return "UNKNOWN (" + setting + ")"
 	}

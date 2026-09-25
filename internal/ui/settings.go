@@ -3,13 +3,11 @@ package ui
 import (
 	"fmt"
 	"maps"
-	"os"
-
-	tea "charm.land/bubbletea/v2"
 
 	"github.com/matjam/encomplayer/internal/art"
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 )
 
@@ -76,13 +74,13 @@ func (m *Model) applyConfig(next config.Config) tea.Cmd {
 
 // applyArt swaps the album art renderer and redraws the current cover.
 func (m *Model) applyArt(setting string) tea.Cmd {
-	r, protocol, err := art.Choose(setting, os.Getenv)
+	r, protocol, err := art.Choose(setting, m.terminal())
 	if err != nil {
 		m.status.errorf("%v", err)
 		return nil
 	}
 	cleanup := m.art.release()
-	m.deps.Art, m.deps.ArtProtocol = r, protocol
+	m.deps.Art, m.deps.ArtProtocol, m.deps.ArtSetting = r, protocol, setting
 	path := m.art.path
 	m.art = artState{placeSeq: m.art.placeSeq}
 	cmds := []tea.Cmd{tea.Raw(cleanup)}

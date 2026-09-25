@@ -3,9 +3,8 @@ package ui
 import (
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {

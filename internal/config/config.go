@@ -17,7 +17,8 @@ type Config struct {
 	// MusicDir is scanned at startup when no directory is given.
 	MusicDir string `json:"music_dir"`
 
-	// AlbumArt selects the image protocol: auto, kitty, iterm, blocks or off.
+	// AlbumArt selects the image protocol: auto, kitty, iterm, sixel, blocks
+	// or off.
 	AlbumArt string `json:"album_art"`
 
 	// Theme names a built-in theme or a custom one in the themes directory.

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/audio"
@@ -17,6 +16,7 @@ import (
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/playlist"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 )
 
@@ -104,9 +104,16 @@ func newTestModelAt(t *testing.T, statePath string) (*Model, *fakePlayer) {
 
 func buildTestModel(t *testing.T, statePath string, startup Startup) (*Model, *fakePlayer) {
 	t.Helper()
-	fp := &fakePlayer{volume: 70, ended: make(chan uint64)}
-	m := New(context.Background(), Deps{
-		Player:      fp,
+	deps := testDeps(statePath, startup)
+	m, _ := startTestModel(deps)
+	return m, deps.Player.(*fakePlayer)
+}
+
+// testDeps returns the dependencies of a test model whose session state
+// lives at statePath.
+func testDeps(statePath string, startup Startup) Deps {
+	return Deps{
+		Player:      &fakePlayer{volume: 70, ended: make(chan uint64)},
 		Playlists:   playlist.NewStore(filepath.Join(filepath.Dir(statePath), "playlists")),
 		Keymap:      keymap.Default(),
 		ArtProtocol: "off",
@@ -120,13 +127,20 @@ func buildTestModel(t *testing.T, statePath string, startup Startup) (*Model, *f
 		Themes:  theme.NewStore(filepath.Join(filepath.Dir(statePath), "themes")),
 		Startup: startup,
 		Version: "test",
-	})
+	}
+}
+
+// startTestModel starts a model from deps at 120×40 and delivers the first
+// library scan, which restores the saved session. It returns the command the
+// scan produced.
+func startTestModel(deps Deps) (*Model, tea.Cmd) {
+	m := New(context.Background(), deps)
 	m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m.boot.skip()
 
 	root := "/music"
-	m.finishScan(scanDoneMsg{root: root, snap: &library.Snapshot{Root: root, Tracks: testTracks(root)}})
-	return m, fp
+	cmd := m.finishScan(scanDoneMsg{root: root, snap: &library.Snapshot{Root: root, Tracks: testTracks(root)}})
+	return m, cmd
 }
 
 func TestShuffleAllAndAllMusic(t *testing.T) {

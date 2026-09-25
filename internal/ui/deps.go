@@ -69,6 +69,10 @@ type Deps struct {
 	// ArtProtocol names the protocol Art implements, for display.
 	ArtProtocol string
 
+	// ArtSetting is the setting Art was chosen from, such as "auto", so the
+	// choice can be revisited once the terminal describes itself.
+	ArtSetting string
+
 	// Formats lists the playable extensions, for display.
 	Formats string
 

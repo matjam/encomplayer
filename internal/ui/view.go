@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/audio"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // View implements tea.Model.

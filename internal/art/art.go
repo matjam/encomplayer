@@ -19,6 +19,7 @@ const (
 	Auto   Protocol = "auto"
 	Kitty  Protocol = "kitty"
 	ITerm  Protocol = "iterm"
+	Sixel  Protocol = "sixel"
 	Blocks Protocol = "blocks"
 	Off    Protocol = "off"
 )
@@ -44,20 +45,30 @@ type Frame struct {
 	Cleanup string
 }
 
-// Renderer draws an image into a box of cols × rows cells.
+// Box is the area an image fills: its size in cells, and the size of one cell
+// in pixels for protocols that draw pixels directly.
+type Box struct {
+	Cols, Rows int
+	Cell       image.Point
+}
+
+// DefaultCell is the cell size assumed until the terminal reports its own.
+var DefaultCell = image.Pt(10, 20)
+
+// Renderer draws an image into a box.
 type Renderer interface {
-	Render(img image.Image, cols, rows int) (Frame, error)
+	Render(img image.Image, box Box) (Frame, error)
 }
 
 // Renderers is the registry of image protocols.
 type Renderers = registry.Registry[Renderer]
 
 // Choose resolves a protocol setting to a renderer. "auto" or "" detects the
-// terminal from getenv, and "off" returns a nil renderer.
-func Choose(setting string, getenv func(string) string) (Renderer, Protocol, error) {
+// best protocol for term, and "off" returns a nil renderer.
+func Choose(setting string, term Terminal) (Renderer, Protocol, error) {
 	protocol := strings.ToLower(setting)
 	if protocol == "" || protocol == Auto {
-		protocol = Detect(getenv)
+		protocol = Detect(term)
 	}
 	if protocol == Off {
 		return nil, Off, nil
@@ -70,13 +81,14 @@ func Choose(setting string, getenv func(string) string) (Renderer, Protocol, err
 }
 
 // Settings lists the values Choose accepts.
-var Settings = []string{Auto, Kitty, ITerm, Blocks, Off}
+var Settings = []string{Auto, Kitty, ITerm, Sixel, Blocks, Off}
 
 // DefaultRenderers registers every built-in protocol.
 func DefaultRenderers() *Renderers {
 	r := registry.New[Renderer]()
 	r.Register(Kitty, NewKitty(), Kitty)
 	r.Register(ITerm, ITermRenderer{}, ITerm)
+	r.Register(Sixel, SixelRenderer{}, Sixel)
 	r.Register(Blocks, BlockRenderer{}, Blocks)
 	return r
 }

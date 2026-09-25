@@ -29,9 +29,9 @@ type KittyRenderer struct {
 func NewKitty() *KittyRenderer { return &KittyRenderer{} }
 
 // Render implements Renderer.
-func (k *KittyRenderer) Render(img image.Image, cols, rows int) (Frame, error) {
-	rows = min(rows, len(diacritics))
-	cols = min(cols, len(diacritics))
+func (k *KittyRenderer) Render(img image.Image, box Box) (Frame, error) {
+	rows := min(box.Rows, len(diacritics))
+	cols := min(box.Cols, len(diacritics))
 	id := idBase + k.next.Add(1)%0xFFFF
 
 	var buf bytes.Buffer
