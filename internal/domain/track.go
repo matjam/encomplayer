@@ -84,6 +84,13 @@ func CompareFold(a, b string) int {
 	)
 }
 
+// ArtistKey groups tracks by artist for Careful mode: the track artist,
+// falling back to the album artist, ignoring case. It is empty when neither
+// is tagged, so untagged tracks never count as the same artist.
+func (t Track) ArtistKey() string {
+	return strings.ToLower(firstNonEmpty(t.Artist, t.AlbumArtist))
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, v := range values {
 		if v != "" {

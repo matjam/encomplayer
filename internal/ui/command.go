@@ -25,6 +25,7 @@ var commandHelp = [][2]string{
 	{":shuffle", "shuffle the queue"},
 	{":volume <0-100>", "set the volume"},
 	{":repeat :random :single :consume", "toggle a mode"},
+	{":careful", "toggle shuffling carefully: no artist twice in a row (Z)"},
 	{":config", "open the config screen (oc)"},
 	{":theme <name>", "switch theme and save it"},
 	{":viz", "show the visualizer full screen, or close it (ov)"},
@@ -82,6 +83,8 @@ func (m *Model) runCommand(line string) tea.Cmd {
 		return m.dispatch(keymap.Action{Name: keymap.ToggleSingle})
 	case "consume":
 		return m.dispatch(keymap.Action{Name: keymap.ToggleConsume})
+	case "careful":
+		return m.dispatch(keymap.Action{Name: keymap.ToggleCareful})
 	case "config", "settings":
 		m.modal = newConfigModal(m)
 	case "reload":

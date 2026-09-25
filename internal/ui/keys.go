@@ -89,6 +89,9 @@ func (m *Model) dispatch(a keymap.Action) tea.Cmd {
 	case keymap.ToggleSingle:
 		m.modes.Single = !m.modes.Single
 		m.modesChanged()
+	case keymap.ToggleCareful:
+		m.modes.Careful = !m.modes.Careful
+		m.modesChanged()
 	case keymap.TogglePause:
 		return m.togglePause()
 	case keymap.Stop:

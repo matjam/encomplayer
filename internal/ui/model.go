@@ -90,7 +90,7 @@ func New(ctx context.Context, deps Deps) *Model {
 		ctx:       ctx,
 		deps:      deps,
 		rng:       rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x454E434F4D)),
-		queue:     domain.NewQueue[domain.Track](),
+		queue:     domain.NewQueue[domain.Track]().GroupBy(domain.Track.ArtistKey),
 		queueList: collection.NewList[domain.Track](nil),
 		modes:     deps.State.Modes,
 		resolver:  keymap.NewResolver(deps.Keymap),

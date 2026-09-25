@@ -129,7 +129,7 @@ func formatStatus(s *remote.Status) string {
 	for _, m := range []struct {
 		on   bool
 		name string
-	}{{s.Repeat, "repeat"}, {s.Random, "random"}, {s.Single, "single"}, {s.Consume, "consume"}} {
+	}{{s.Repeat, "repeat"}, {s.Random, "random"}, {s.Single, "single"}, {s.Consume, "consume"}, {s.Careful, "careful"}} {
 		if m.on {
 			modes = append(modes, m.name)
 		}

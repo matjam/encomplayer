@@ -30,7 +30,7 @@ func (m *Model) bodyTop() int {
 	return tabBodyTop
 }
 
-var modeNames = []string{"REPEAT", "RANDOM", "SINGLE", "CONSUME"}
+var modeNames = []string{"REPEAT", "RANDOM", "SINGLE", "CONSUME", "CAREFUL"}
 
 // modesWidth is the width of the mode flags joined by single spaces.
 var modesWidth = len(strings.Join(modeNames, " "))

@@ -19,4 +19,8 @@ type Modes struct {
 
 	// Consume removes each track from the queue once it has played.
 	Consume bool `json:"consume"`
+
+	// Careful keeps tracks by the same artist apart when shuffling or
+	// picking at random. An EncomPlayer addition.
+	Careful bool `json:"careful"`
 }

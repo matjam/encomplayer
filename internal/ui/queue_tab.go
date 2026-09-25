@@ -90,7 +90,7 @@ func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
 			l.SetCursor(i)
 		}
 	case keymap.Shuffle:
-		m.queue.Shuffle(m.rng)
+		m.queue.Shuffle(m.modes, m.rng)
 		m.syncQueue()
 		m.status.infof("queue shuffled")
 	case keymap.Save:

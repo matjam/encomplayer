@@ -175,7 +175,7 @@ func TestQueueKeepsCurrentThroughEdits(t *testing.T) {
 		t.Fatalf("after Swap current = %q@%d, want c@0", cur, i)
 	}
 
-	q.Shuffle(rand.New(rand.NewPCG(3, 4)))
+	q.Shuffle(Modes{}, rand.New(rand.NewPCG(3, 4)))
 	if cur, _, _ := q.Current(); cur != "c" {
 		t.Fatalf("after Shuffle current = %q, want c", cur)
 	}

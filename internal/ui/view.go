@@ -74,7 +74,7 @@ func (m *Model) header() []string {
 
 	vol := m.deps.Player.Volume()
 	volBar := st.dim.Render(volLabel) + st.meter(vol, 100, volSegments) + st.text.Render(fmt.Sprintf(" %3d%%", vol))
-	on := []bool{m.modes.Repeat, m.modes.Random, m.modes.Single, m.modes.Consume}
+	on := []bool{m.modes.Repeat, m.modes.Random, m.modes.Single, m.modes.Consume, m.modes.Careful}
 	flags := make([]string, len(modeNames))
 	for i, name := range modeNames {
 		flags[i] = st.flag(name, on[i])

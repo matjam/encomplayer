@@ -156,7 +156,7 @@ func (m *Model) playShuffled(tracks []domain.Track) tea.Cmd {
 	}
 	m.queue.Clear()
 	m.queue.Append(tracks...)
-	m.queue.Shuffle(m.rng)
+	m.queue.Shuffle(m.modes, m.rng)
 	m.syncQueue()
 	m.queueList.Top()
 	m.status.infof("shuffling %d tracks", len(tracks))
@@ -231,7 +231,7 @@ func (m *Model) restoreQueue() tea.Cmd {
 			current--
 		}
 	}
-	m.queue = domain.NewQueue(tracks...)
+	m.queue = domain.NewQueue(tracks...).GroupBy(domain.Track.ArtistKey)
 	if m.queue.SetCurrent(current) {
 		m.resumeAt = time.Duration(m.deps.State.PositionSeconds * float64(time.Second))
 	}

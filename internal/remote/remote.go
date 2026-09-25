@@ -59,6 +59,7 @@ type Status struct {
 	Random      bool    `json:"random"`
 	Single      bool    `json:"single"`
 	Consume     bool    `json:"consume"`
+	Careful     bool    `json:"careful"`
 	QueueIndex  int     `json:"queue_index"`
 	QueueLength int     `json:"queue_length"`
 

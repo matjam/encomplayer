@@ -13,6 +13,10 @@ type Queue[T any] struct {
 	// planned is the random pick PeekNext promised, so the track the
 	// player preloads is the one Advance plays. -1 when unset.
 	planned int
+
+	// group names the group Careful mode keeps apart, such as an artist.
+	// Nil when the queue has no grouping.
+	group func(T) string
 }
 
 // NewQueue returns a queue holding items with nothing current.
@@ -118,8 +122,14 @@ func (q *Queue[T]) Swap(i, j int) bool {
 }
 
 // Shuffle randomises the order and keeps the current marker on the same item.
-func (q *Queue[T]) Shuffle(r *rand.Rand) {
-	order := r.Perm(len(q.items))
+// In Careful mode, items in the same group are kept apart.
+func (q *Queue[T]) Shuffle(m Modes, r *rand.Rand) {
+	var order []int
+	if q.careful(m) {
+		order = spreadOrder(q.groups(), r)
+	} else {
+		order = r.Perm(len(q.items))
+	}
 	shuffled := make([]T, len(q.items))
 	current := -1
 	for dst, src := range order {
@@ -191,7 +201,7 @@ func (q *Queue[T]) nextIndex(m Modes, auto bool, r *rand.Rand) int {
 	case auto && m.Single:
 		return -1
 	case m.Random:
-		return q.randomIndex(r)
+		return q.randomIndex(m, r)
 	case q.current+1 < n:
 		return q.current + 1
 	case m.Repeat:
@@ -201,13 +211,18 @@ func (q *Queue[T]) nextIndex(m Modes, auto bool, r *rand.Rand) int {
 	}
 }
 
-func (q *Queue[T]) randomIndex(r *rand.Rand) int {
+func (q *Queue[T]) randomIndex(m Modes, r *rand.Rand) int {
 	n := len(q.items)
 	if q.planned >= 0 && q.planned < n && (q.planned != q.current || n == 1) {
 		return q.planned
 	}
 	if n == 1 || q.current < 0 {
 		return r.IntN(n)
+	}
+	if q.careful(m) {
+		if i, ok := q.otherGroupIndex(r); ok {
+			return i
+		}
 	}
 
 	// Draw from the other n-1 items so the current one never repeats.

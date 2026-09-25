@@ -104,7 +104,7 @@ var commandArity = map[string][2]int{
 	"status": {0, 0}, "play": {0, 0}, "pause": {0, 0}, "toggle": {0, 0},
 	"stop": {0, 0}, "next": {0, 0}, "prev": {0, 0},
 	"seek": {1, 1}, "volume": {1, 1},
-	"repeat": {0, 1}, "random": {0, 1}, "single": {0, 1}, "consume": {0, 1},
+	"repeat": {0, 1}, "random": {0, 1}, "single": {0, 1}, "consume": {0, 1}, "careful": {0, 1},
 	"shuffle": {0, 0}, "shuffle-all": {0, 0}, "add": {1, 1}, "reload": {0, 0},
 	"viz": {0, 1},
 }
@@ -227,6 +227,7 @@ Commands:
   seek +N | -N | SECONDS | M:SS relative or absolute
   volume N | +N | -N            0-100, or a step
   repeat | random | single | consume [on|off]   toggles without an argument
+  careful [on|off]              keep an artist's tracks apart when shuffling
   shuffle                       shuffle the queue
   shuffle-all                   play the whole library shuffled
   add PATH                      append a file or folder to the queue
