@@ -4,10 +4,10 @@ import (
 	"image"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 
 	"github.com/matjam/encomplayer/internal/art"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // recordingRenderer remembers the boxes it was asked to fill, and draws as an

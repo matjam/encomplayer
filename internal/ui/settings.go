@@ -5,11 +5,10 @@ import (
 	"maps"
 	"os"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/art"
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 )
 

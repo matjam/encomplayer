@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/audio"
@@ -17,6 +16,7 @@ import (
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/playlist"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 )
 

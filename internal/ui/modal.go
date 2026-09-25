@@ -3,11 +3,10 @@ package ui
 import (
 	"strings"
 
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
+	"github.com/matjam/encomplayer/internal/tea/textinput"
 )
 
 // modal is a dialog drawn over the body. It receives every keystroke until

@@ -4,10 +4,9 @@ import (
 	"os"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/audio"
 	"github.com/matjam/encomplayer/internal/domain"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // playIndex starts the queue item at i.

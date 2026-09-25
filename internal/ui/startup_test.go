@@ -5,11 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // recordingScanner remembers the options it was scanned with.

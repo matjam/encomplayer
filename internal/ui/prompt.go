@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
+	"github.com/matjam/encomplayer/internal/tea"
+	"github.com/matjam/encomplayer/internal/tea/textinput"
 )
 
 type promptKind int

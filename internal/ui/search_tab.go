@@ -3,13 +3,12 @@ package ui
 import (
 	"fmt"
 
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/tea"
+	"github.com/matjam/encomplayer/internal/tea/textinput"
 )
 
 // searchTab filters the library by one tag field as the query is typed.

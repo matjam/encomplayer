@@ -4,11 +4,10 @@ import (
 	"maps"
 	"strings"
 
-	"charm.land/bubbles/v2/textinput"
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/config"
+	"github.com/matjam/encomplayer/internal/tea"
+	"github.com/matjam/encomplayer/internal/tea/textinput"
 )
 
 type configTab struct {

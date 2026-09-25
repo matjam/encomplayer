@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 const (

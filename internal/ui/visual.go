@@ -5,10 +5,9 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/audio"
 	"github.com/matjam/encomplayer/internal/config"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/viz"
 	// Built-in visualisers register themselves.
 	_ "github.com/matjam/encomplayer/internal/viz/builtin"

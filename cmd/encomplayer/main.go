@@ -17,7 +17,6 @@ import (
 	"syscall"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 
 	"github.com/matjam/encomplayer/internal/art"
@@ -29,6 +28,7 @@ import (
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/library/ffprobe"
 	"github.com/matjam/encomplayer/internal/playlist"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
 	"github.com/matjam/encomplayer/internal/viz"

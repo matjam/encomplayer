@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 func click(m *Model, x, y int) {

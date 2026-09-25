@@ -3,9 +3,8 @@ package ui
 import (
 	"slices"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/domain"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // askSavePlaylist prompts for a name and appends tracks to that playlist,

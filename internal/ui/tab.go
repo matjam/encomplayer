@@ -1,10 +1,9 @@
 package ui
 
 import (
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // tab is one screen reachable from the tab bar.

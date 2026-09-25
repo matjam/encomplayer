@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/config"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/viz"
 )
 

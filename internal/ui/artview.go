@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/art"
 	"github.com/matjam/encomplayer/internal/domain"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // placeDelay lets the renderer flush a frame with a blank art box before an

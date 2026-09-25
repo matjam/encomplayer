@@ -8,7 +8,6 @@ import (
 	"math/rand/v2"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 
 	"github.com/matjam/encomplayer/internal/audio"
@@ -17,6 +16,7 @@ import (
 	"github.com/matjam/encomplayer/internal/domain"
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
+	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/viz"
 )
 

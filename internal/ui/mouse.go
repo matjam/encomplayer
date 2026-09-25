@@ -3,9 +3,8 @@ package ui
 import (
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/keymap"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // doubleClick is the longest gap between clicks on one row that counts as a

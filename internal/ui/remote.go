@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/matjam/encomplayer/internal/audio"
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/remote"
+	"github.com/matjam/encomplayer/internal/tea"
 )
 
 // RemoteMsg carries a command from the remote control socket into the event
