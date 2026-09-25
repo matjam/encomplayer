@@ -56,9 +56,8 @@ brew install --cask matjam/tap/encomplayer
 <summary><b>Debian and Ubuntu</b></summary>
 
 ```sh
-v=1.2.0   # the release you want, without the v
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer_${v}_amd64.deb
-sudo apt install ./encomplayer_${v}_amd64.deb
+curl -fLO https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.deb
+sudo apt install ./encomplayer_amd64.deb
 ```
 
 On ARM, replace `amd64` with `arm64`.
@@ -69,11 +68,10 @@ On ARM, replace `amd64` with `arm64`.
 <summary><b>Fedora, RHEL and openSUSE</b></summary>
 
 ```sh
-v=1.2.0
-sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1.x86_64.rpm
+sudo dnf install https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.rpm
 ```
 
-On ARM, replace `x86_64` with `aarch64`.
+On ARM, replace `amd64` with `arm64`.
 
 </details>
 
@@ -81,14 +79,13 @@ On ARM, replace `x86_64` with `aarch64`.
 <summary><b>Arch Linux</b></summary>
 
 ```sh
-v=1.2.0
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
-sudo pacman -U ./encomplayer-$v-1-x86_64.pkg.tar.zst
+curl -fLO https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.pkg.tar.zst
+sudo pacman -U ./encomplayer_amd64.pkg.tar.zst
 ```
 
 Download the file first, because `pacman -U <url>` requires a detached
 signature for remote packages and these are not signed. On ARM, replace
-`x86_64` with `aarch64`.
+`amd64` with `arm64`.
 
 </details>
 
@@ -112,6 +109,11 @@ go install github.com/matjam/encomplayer/cmd/encomplayer@latest
 Builds with `CGO_ENABLED=0`, so no C toolchain is needed.
 
 </details>
+
+The package links always fetch the latest release. Every release also has
+the packages under versioned names, such as `encomplayer_1.5.0_amd64.deb`, on
+the [releases page](https://github.com/matjam/encomplayer/releases) for
+pinning a version.
 
 MP3, FLAC, Ogg Vorbis and WAV need nothing else. For other formats, also
 install ffmpeg (`brew install ffmpeg`, `sudo apt install ffmpeg`,
@@ -139,6 +141,7 @@ The music folder comes from the argument, then `music_dir` in the config, then
 | `--list-themes` | List built-in and custom themes |
 | `--list-visualizers` | List the visualizers |
 | `--paths` | Print where config, themes, playlists, cache, state and the socket live |
+| `--reload` | Make the running player reread its config and theme (same as the `reload` command) |
 | `-v, --version` | Print the version and a diagnostics banner |
 | `-h, --help` | Show help |
 
@@ -278,6 +281,32 @@ After editing the file, apply it without restarting by running
 `encomplayer reload`, `:reload` inside the player, or
 `pkill -USR1 encomplayer`.
 
+## Album art
+
+Art comes from the picture embedded in the track, or else a `cover`,
+`folder`, `front`, `album`, `albumart` or `albumartsmall` image (`.jpg`,
+`.jpeg` or `.png`) in its folder.
+
+With `album_art` set to `auto` (the default), the player uses the best
+protocol the terminal supports:
+
+| Terminal | Protocol |
+|---|---|
+| kitty, Ghostty | `kitty`: Unicode placeholders, which flow through the layout |
+| iTerm2, WezTerm | `iterm`: inline images |
+| foot, or any other terminal that reports sixel support | `sixel` |
+| Anything else | `blocks`: half-block pixels, two per cell, in any truecolor terminal |
+
+kitty, Ghostty, iTerm2 and WezTerm are recognised from their environment
+variables. Sixel support is asked of the terminal itself, so foot is found
+even when `TERM` is `xterm-256color`. The art can show as half blocks for a
+moment until the terminal answers. Inside tmux or screen, the kitty and
+iTerm2 protocols are never used, because passthrough depends on their
+configuration; sixel is, if the multiplexer reports it.
+
+To choose a protocol yourself, set `album_art` or pass `--art`. The
+`--version` banner shows the choice made from the environment alone.
+
 ## Visualizers
 
 The SIGNAL strip shows the selected visualizer above the seek bar. Press
@@ -398,7 +427,8 @@ file retagged in place when its folder did not change.
 - **Formats:** implement `audio.Decoder` and register it for its extensions.
   Decoders registered earlier take priority.
 - **Tags:** implement `library.TagReader` and add it to the `Tagger` chain.
-- **Image protocols:** implement `art.Renderer` and register it by name.
+- **Image protocols:** implement `art.Renderer` and register it by name, and
+  teach `art.Detect` when to choose it.
 - **Visualizers:** add a file to `internal/viz/builtin` that calls
   `viz.Register` from `init`; see [Writing a visualizer](#writing-a-visualizer).
 - **Keys:** every action can be rebound in the config.
@@ -409,3 +439,10 @@ file retagged in place when its folder did not change.
 go build -o bin/encomplayer ./cmd/encomplayer
 go test ./...
 ```
+
+`internal/tea` is a copy of [bubbletea](https://github.com/charmbracelet/bubbletea)
+and bubbles' text input, changed so the player can turn off the renderer's
+scroll optimisation while album art is on screen. Import them from there,
+not from `charm.land`. Its [README](internal/tea/README.md) says what changed
+and how to update it. `AGENTS.md` has the full checks to run before a pull
+request.

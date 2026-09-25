@@ -32,7 +32,8 @@ checksum:
   algorithm: sha256
 
 nfpms:
-  - id: packages
+  - &packages
+    id: packages
     package_name: encomplayer
     # ConventionalFileName can contain "~", which GitHub rewrites to "."
     # and so breaks checksums; release versions never include one.
@@ -58,6 +59,12 @@ nfpms:
         dst: /usr/share/doc/encomplayer/README.md
       - src: LICENSE
         dst: /usr/share/licenses/encomplayer/LICENSE
+
+  # The same packages again without the version in the file name, so the
+  # README can link to releases/latest/download/ and never name a version.
+  - <<: *packages
+    id: packages-latest
+    file_name_template: "{{ .ProjectName }}_{{ .Arch }}{{ .ConventionalExtension }}"
 
 homebrew_casks:
   - name: encomplayer
