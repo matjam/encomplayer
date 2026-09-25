@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/matjam/encomplayer/compare/v1.5.0...v1.6.0) (2026-09-25)
+
+
+### Features
+
+* Shuffle Carefully mode keeps an artist's tracks apart ([#20](https://github.com/matjam/encomplayer/issues/20)) ([24b448b](https://github.com/matjam/encomplayer/commit/24b448b4de7d980fbc3991e5da86e7674b688759))
+
 ## [1.5.0](https://github.com/matjam/encomplayer/compare/v1.4.0...v1.5.0) (2026-09-25)
 
 
