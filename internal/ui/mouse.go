@@ -110,7 +110,7 @@ func (m *Model) click(x, y int) tea.Cmd {
 		}
 	case y == modesRow:
 		if i, ok := m.modeAt(x); ok {
-			toggles := []string{keymap.ToggleRepeat, keymap.ToggleRandom, keymap.ToggleSingle, keymap.ToggleConsume}
+			toggles := []string{keymap.ToggleRepeat, keymap.ToggleRandom, keymap.ToggleSingle, keymap.ToggleConsume, keymap.ToggleCareful}
 			return m.dispatch(keymap.Action{Name: toggles[i]})
 		}
 	case m.viz.full && y >= m.bodyTop() && y < m.footerTop():

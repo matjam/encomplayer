@@ -27,7 +27,7 @@ type NoticeMsg struct{ Text string }
 // RemoteCommands lists the commands the player accepts, for the CLI.
 var RemoteCommands = []string{
 	"status", "play", "pause", "toggle", "stop", "next", "prev",
-	"seek", "volume", "repeat", "random", "single", "consume",
+	"seek", "volume", "repeat", "random", "single", "consume", "careful",
 	"shuffle", "shuffle-all", "add", "reload", "viz",
 }
 
@@ -74,7 +74,7 @@ func (m *Model) runRemote(req remote.Request) (tea.Cmd, error) {
 		return nil, m.remoteSeek(arg)
 	case "volume":
 		return nil, m.remoteVolume(arg)
-	case "repeat", "random", "single", "consume":
+	case "repeat", "random", "single", "consume", "careful":
 		return nil, m.remoteMode(req.Cmd, arg)
 	case "shuffle":
 		return m.dispatchQueue(keymap.Shuffle), nil
@@ -162,6 +162,7 @@ func (m *Model) remoteMode(name, arg string) error {
 	modes := map[string]*bool{
 		"repeat": &m.modes.Repeat, "random": &m.modes.Random,
 		"single": &m.modes.Single, "consume": &m.modes.Consume,
+		"careful": &m.modes.Careful,
 	}
 	flag := modes[name]
 	switch arg {
@@ -190,6 +191,7 @@ func (m *Model) remoteStatus() *remote.Status {
 		Random:         m.modes.Random,
 		Single:         m.modes.Single,
 		Consume:        m.modes.Consume,
+		Careful:        m.modes.Careful,
 		QueueIndex:     m.queue.CurrentIndex(),
 		QueueLength:    m.queue.Len(),
 		Visualizer:     m.viz.info.Name,

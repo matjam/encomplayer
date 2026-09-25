@@ -105,6 +105,9 @@ const (
 	ShufflePlay = "ShufflePlay"
 	ShowConfig  = "ShowConfig"
 
+	// ToggleCareful keeps tracks by the same artist apart when shuffling.
+	ToggleCareful = "ToggleCareful"
+
 	ToggleVisualizer   = "ToggleVisualizer"
 	NextVisualizer     = "NextVisualizer"
 	PreviousVisualizer = "PreviousVisualizer"

@@ -10,7 +10,9 @@ rmpc's keybindings. No MPD required.
 - Plays MP3, FLAC, Ogg Vorbis and WAV in pure Go. With ffmpeg installed it also
   plays AAC/M4A, ALAC, Opus, WavPack, AIFF, WMA and anything else ffmpeg reads.
 - Browses by folder, artist, album artist, album and genre, with search.
-- Queue with repeat, random, single and consume modes; M3U8 playlists.
+- Queue with repeat, random, single and consume modes, plus Shuffle
+  Carefully, which never plays the same artist twice in a row; M3U8
+  playlists.
 - Album art in kitty and Ghostty (Unicode placeholders), iTerm2 and WezTerm
   (inline images), sixel in foot and any terminal that reports sixel support
   (whatever `TERM` says), and half-block rendering in any truecolor terminal.
@@ -163,7 +165,7 @@ With a player running, these commands control it from any shell:
 | `seek SECONDS`, `seek M:SS`, `seek H:MM:SS` | Seek to an absolute position |
 | `volume N` | Set the volume, 0–100 |
 | `volume +N`, `volume -N` | Step the volume |
-| `repeat`, `random`, `single`, `consume` | Toggle a mode, or pass `on` or `off` |
+| `repeat`, `random`, `single`, `consume`, `careful` | Toggle a mode, or pass `on` or `off` |
 | `shuffle` | Shuffle the queue |
 | `shuffle-all` | Replace the queue with the whole library, shuffled, and play it |
 | `add PATH` | Append a file or folder to the queue |
@@ -207,6 +209,7 @@ The defaults match rmpc. Press `?` for the full list.
 | `p`, `s`, `>`/`<` | Pause, stop, next/previous |
 | `f`/`b`, `.`/`,` | Seek, volume |
 | `z` `x` `v` `c` | Repeat, random, single, consume |
+| **`Z`** | **Shuffle Carefully: no artist twice in a row** |
 | `/`, `n`/`N` | Find in list |
 | `C-s s` / `C-s a` | Save selection / everything to a playlist |
 | **`S`** | **Play the whole library shuffled** |
@@ -220,6 +223,16 @@ The defaults match rmpc. Press `?` for the full list.
 
 The Playlists tab starts with **ALL MUSIC**, so `6` `X` also shuffles
 everything, and `C-s s` on it saves the library as a playlist.
+
+With Shuffle Carefully on (`Z`, `:careful`, or the CAREFUL flag in the
+header), every shuffle orders the tracks so the same artist never plays twice
+in a row, and random mode never picks the playing track's artist next while
+the queue holds another artist. That
+covers `S`, `X`, `--shuffle` and the `shuffle` commands. Artists are matched by
+the track's artist tag, or its album artist when that is missing, ignoring
+case, so a compilation is spread by each track's own artist. When one artist
+has more than half the tracks, some repeats are unavoidable, and they are
+kept to the fewest possible.
 
 The queue, current track and play position survive a restart. After
 relaunching, `p` resumes the track where it stopped. Choosing a track with
