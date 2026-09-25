@@ -56,9 +56,8 @@ brew install --cask matjam/tap/encomplayer
 <summary><b>Debian and Ubuntu</b></summary>
 
 ```sh
-v=1.2.0   # the release you want, without the v
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer_${v}_amd64.deb
-sudo apt install ./encomplayer_${v}_amd64.deb
+curl -fLO https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.deb
+sudo apt install ./encomplayer_amd64.deb
 ```
 
 On ARM, replace `amd64` with `arm64`.
@@ -69,11 +68,10 @@ On ARM, replace `amd64` with `arm64`.
 <summary><b>Fedora, RHEL and openSUSE</b></summary>
 
 ```sh
-v=1.2.0
-sudo dnf install https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1.x86_64.rpm
+sudo dnf install https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.rpm
 ```
 
-On ARM, replace `x86_64` with `aarch64`.
+On ARM, replace `amd64` with `arm64`.
 
 </details>
 
@@ -81,14 +79,13 @@ On ARM, replace `x86_64` with `aarch64`.
 <summary><b>Arch Linux</b></summary>
 
 ```sh
-v=1.2.0
-curl -fLO https://github.com/matjam/encomplayer/releases/download/v$v/encomplayer-$v-1-x86_64.pkg.tar.zst
-sudo pacman -U ./encomplayer-$v-1-x86_64.pkg.tar.zst
+curl -fLO https://github.com/matjam/encomplayer/releases/latest/download/encomplayer_amd64.pkg.tar.zst
+sudo pacman -U ./encomplayer_amd64.pkg.tar.zst
 ```
 
 Download the file first, because `pacman -U <url>` requires a detached
 signature for remote packages and these are not signed. On ARM, replace
-`x86_64` with `aarch64`.
+`amd64` with `arm64`.
 
 </details>
 
@@ -112,6 +109,11 @@ go install github.com/matjam/encomplayer/cmd/encomplayer@latest
 Builds with `CGO_ENABLED=0`, so no C toolchain is needed.
 
 </details>
+
+The package links always fetch the latest release. Every release also has
+the packages under versioned names, such as `encomplayer_1.5.0_amd64.deb`, on
+the [releases page](https://github.com/matjam/encomplayer/releases) for
+pinning a version.
 
 MP3, FLAC, Ogg Vorbis and WAV need nothing else. For other formats, also
 install ffmpeg (`brew install ffmpeg`, `sudo apt install ffmpeg`,
