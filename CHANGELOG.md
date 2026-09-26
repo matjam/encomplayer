@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/matjam/encomplayer/compare/v1.7.0...v1.7.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* build a visualizer once when switching, and document writing one ([#25](https://github.com/matjam/encomplayer/issues/25)) ([34aef4d](https://github.com/matjam/encomplayer/commit/34aef4d7aa61bde28ec4b9b48afd95c2288639dc))
+
 ## [1.7.0](https://github.com/matjam/encomplayer/compare/v1.6.0...v1.7.0) (2026-09-26)
 
 
