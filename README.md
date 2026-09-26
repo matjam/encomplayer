@@ -426,17 +426,23 @@ Scripts get Lua's `string`, `math`, `table` and `utf8` libraries, but no
 files, processes or `require`. Each frame has 250 ms and 64 MB, after
 which the script stops with an error. Keep a 200×50 frame, which is 20,000
 pixels, well under 2 ms: `go test -bench . ./internal/viz/script` reports
-each built-in's cost. In apogee 1.0, per pixel:
+each built-in's cost. apogee compiles an inner loop of arithmetic,
+comparisons, buffer reads and writes, and `math.floor`, `ceil`, `abs`,
+`min`, `max`, `sqrt`, `sin` and `cos` to machine code with its variables in
+registers, about a nanosecond an operation. Per pixel:
 
-- copy upvalues into locals before a hot loop, as buffers read through
-  upvalues keep it from compiling tightly;
-- prefer `x // 1` and `if` clamps to `math.floor`, `math.min` and
-  `math.max`, which call Go (about 15–25 ns each);
-- avoid `%` of floats, which calls Go, and `math.random`; the built-in
-  `fire` shows an inline generator.
+- write `min(x, 1.0)`, not `min(x, 1)`, for a float `x`: the integer `1`
+  changes the result's type whenever it clamps, which slows the loop;
+- clamp a `floor` result with `if` rather than `min` or `max`, which run
+  slowly together in apogee 1.1
+  ([matjam/apogee#140](https://github.com/matjam/apogee/issues/140));
+- `math.random`, and `%` of floats by anything but a power of two, call
+  Go; the built-in `fire` shows an inline random number generator.
 
 On Windows, and other platforms apogee does not compile for, scripts are
-interpreted, about twice as slow.
+interpreted. Per-pixel effects then run two to four times slower, and the
+heaviest built-ins (`milkdrop`, `vectorscope`, `life`, `plasma` and
+`tunnel`) take 2.5–6 ms a frame.
 
 ## Themes
 

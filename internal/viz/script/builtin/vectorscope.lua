@@ -1,7 +1,7 @@
 -- Stereo goniometer: each sample pair is a point, with phosphor that glows
 -- for a moment after the beam passes.
 
-local min = math.min
+local min, floor = math.min, math.floor
 local ROOT2 = math.sqrt(2)
 
 local phosphor, width, height = f64(0), 0, 0
@@ -28,13 +28,11 @@ return {
       local l, r = left[i] * g, right[i] * g
       -- Rotate 45° so the mid signal points up and the side signal
       -- spreads sideways.
-      local px = (cx + (l - r) / ROOT2 * radius) // 1
-      local py = (cy - (l + r) / ROOT2 * radius) // 1
+      local px = floor(cx + (l - r) / ROOT2 * radius)
+      local py = floor(cy - (l + r) / ROOT2 * radius)
       if px >= 0 and py >= 0 and px < w and py < h then
         local k = py * w + px
-        local v = ph[k] + 0.35
-        if v > 1.0 then v = 1.0 end
-        ph[k] = v
+        ph[k] = min(ph[k] + 0.35, 1.0)
       end
     end
 

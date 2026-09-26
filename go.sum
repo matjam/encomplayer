@@ -51,8 +51,8 @@ github.com/jfreymuth/vorbis v1.0.2/go.mod h1:DoftRo4AznKnShRl1GxiTFCseHr4zR9BN3T
 github.com/jszwec/csvutil v1.5.1/go.mod h1:Rpu7Uu9giO9subDyMCIQfHVDuLrcaC36UA4YcJjGBkg=
 github.com/lucasb-eyer/go-colorful v1.4.1 h1:1EO+WB73+EH8EVbzlrG3KLAfEypQWVHIBqlTf+2hNss=
 github.com/lucasb-eyer/go-colorful v1.4.1/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
-github.com/matjam/apogee v1.0.0 h1:nYz5KYYgqGN6MNH2781uuN+1svFFJjtgQPvx2YiT1dc=
-github.com/matjam/apogee v1.0.0/go.mod h1:u0sd7+dm7LDeV+InIwvqHDYt5wL2e5JJ9a03Ec8v1OU=
+github.com/matjam/apogee v1.1.0 h1:sSnJwKgs7R3nPaHY8LL4CneU6Jovsw5823D5gM2Lyok=
+github.com/matjam/apogee v1.1.0/go.mod h1:u0sd7+dm7LDeV+InIwvqHDYt5wL2e5JJ9a03Ec8v1OU=
 github.com/mattn/go-runewidth v0.0.27 h1:Feg/Oou5zI/wnpgDF6omIU0OokC9GxLC/WRknhVlIR0=
 github.com/mattn/go-runewidth v0.0.27/go.mod h1:3qAiGCV4Koz/yuveO58qUefmUTRm8r0IGEXZ9jeHp/8=
 github.com/mewkiz/flac v1.0.12 h1:5Y1BRlUebfiVXPmz7hDD7h3ceV2XNrGNMejNVjDpgPY=
