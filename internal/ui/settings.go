@@ -12,8 +12,9 @@ import (
 	"github.com/matjam/encomplayer/internal/viz"
 )
 
-// ReloadMsg asks the UI to reread the config file and the active theme. The
-// program sends it on SIGUSR1; :reload does the same from inside.
+// ReloadMsg asks the UI to reread the config file, the active theme and the
+// visualizer scripts. The program sends it on SIGUSR1; :reload does the
+// same from inside.
 type ReloadMsg struct{}
 
 // applyTheme switches to the named theme. On failure the current styles
@@ -109,8 +110,8 @@ func (m *Model) saveConfig() {
 	}
 }
 
-// reload rereads config.json and the theme file, for edits made outside the
-// player.
+// reload rereads config.json, the theme file and the visualizer scripts,
+// for edits made outside the player.
 func (m *Model) reload() tea.Cmd {
 	cfg, err := config.Load(m.deps.Paths.Config)
 	if err != nil {

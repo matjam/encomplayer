@@ -55,8 +55,8 @@ func newFlagSet(opts *options, defaultConfig string) *pflag.FlagSet {
 	fs.BoolVar(&opts.noMouse, "no-mouse", false, "leave the mouse to the terminal for this run, e.g. to select text")
 	fs.BoolVar(&opts.listThemes, "list-themes", false, "list built-in and custom themes and exit")
 	fs.BoolVar(&opts.listViz, "list-visualizers", false, "list the visualizers and exit")
-	fs.BoolVar(&opts.paths, "paths", false, "print where config, themes, playlists, cache and state live, and exit")
-	fs.BoolVar(&opts.reload, "reload", false, "make the running player reread its config and theme (same as the reload command)")
+	fs.BoolVar(&opts.paths, "paths", false, "print where config, themes, visualizers, playlists, cache and state live, and exit")
+	fs.BoolVar(&opts.reload, "reload", false, "make the running player reread its config, theme and visualizer scripts (same as the reload command)")
 	fs.BoolVar(&opts.json, "json", false, "with the status command, print JSON")
 	fs.BoolVarP(&opts.version, "version", "v", false, "print the version and exit")
 	fs.BoolVarP(&opts.help, "help", "h", false, "show this help and exit")
@@ -231,7 +231,7 @@ Commands:
   shuffle                       shuffle the queue
   shuffle-all                   play the whole library shuffled
   add PATH                      append a file or folder to the queue
-  reload                        reread config.json and the theme
+  reload                        reread config.json, the theme and visualizer scripts
   viz [NAME | next | prev]      switch visualizer; alone, toggle full screen
 
 A folder named like a command opens with ./name or -- name.

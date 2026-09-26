@@ -30,7 +30,7 @@ var commandHelp = [][2]string{
 	{":theme <name>", "switch theme and save it"},
 	{":viz", "show the visualizer full screen, or close it (ov)"},
 	{":viz <name|next|prev>", "switch visualizer ([ and ])"},
-	{":reload", "reread config.json and the theme (also SIGUSR1)"},
+	{":reload", "reread config.json, the theme and visualizer scripts (also SIGUSR1)"},
 	{":help", "show this screen"},
 	{":q", "quit"},
 }

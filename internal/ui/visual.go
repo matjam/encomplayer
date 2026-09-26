@@ -64,8 +64,8 @@ func (m *Model) closeViz() {
 
 // switchViz selects a visualiser and saves it as the configured one.
 func (m *Model) switchViz(name string) tea.Cmd {
-	if _, _, err := m.viz.catalog.New(name); err != nil {
-		m.status.errorf("visualizer: %v", err)
+	if err := m.selectViz(name); err != nil {
+		m.status.errorf("%v", err)
 		return nil
 	}
 	cmd := m.updateConfig(func(c *config.Config) { c.Visualizer = name })

@@ -64,9 +64,9 @@ real terminal and exercise the change.
 - Extend through the registries: `audio.Decoder` per extension,
   `library.TagReader` in the tagger chain, `art.Renderer` per protocol.
   Visualizers are Lua scripts: a new built-in is a file in
-  `internal/viz/script/builtin`, and the README's "Writing a visualizer"
-  is the API they see. Keep that section in step with
-  `internal/viz/script/api.go`, `frame.go` and `prelude.lua`.
+  `internal/viz/script/builtin`, and `docs/visualizers.md` is the API they
+  see. Keep that guide in step with `internal/viz/script/api.go`,
+  `frame.go` and `prelude.lua`.
 - Visualizers must stay cheap: check `go test -bench . ./internal/viz/script`
   and keep a 200×50 frame well under 2 ms.
 - Keep `CGO_ENABLED=0`. Every release binary is a static cross-compile from

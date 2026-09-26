@@ -266,6 +266,7 @@ func configTabs() []configTab {
 			return []configRow{
 				infoRow{"Config file", p.Config},
 				infoRow{"Themes", p.Themes},
+				infoRow{"Visualizers", p.Visualizers},
 				infoRow{"Playlists", p.Playlists},
 				infoRow{"Library cache", p.Cache},
 				infoRow{"Session state", p.State},
