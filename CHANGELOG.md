@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/matjam/encomplayer/compare/v1.6.0...v1.7.0) (2026-09-26)
+
+
+### Features
+
+* visualizers are Lua plugins, and users can add their own ([#22](https://github.com/matjam/encomplayer/issues/22)) ([e1720f4](https://github.com/matjam/encomplayer/commit/e1720f49550d9b612aa752a115f71007184e87d2))
+
 ## [1.6.0](https://github.com/matjam/encomplayer/compare/v1.5.0...v1.6.0) (2026-09-25)
 
 
