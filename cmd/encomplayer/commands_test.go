@@ -124,8 +124,8 @@ func TestFormatStatus(t *testing.T) {
 
 func TestPrintPaths(t *testing.T) {
 	var out bytes.Buffer
-	printPaths(&out, config.Paths{Config: "/c/config.json", Themes: "/c/themes", Playlists: "/c/pl", Cache: "/k/lib.json", State: "/s/state.json"})
-	for _, want := range []string{"config     /c/config.json", "themes     /c/themes", "socket     /s/encomplayer.sock"} {
+	printPaths(&out, config.Paths{Config: "/c/config.json", Themes: "/c/themes", Visualizers: "/c/viz", Playlists: "/c/pl", Cache: "/k/lib.json", State: "/s/state.json"})
+	for _, want := range []string{"config       /c/config.json", "themes       /c/themes", "visualizers  /c/viz", "socket       /s/encomplayer.sock"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("paths missing %q:\n%s", want, out.String())
 		}

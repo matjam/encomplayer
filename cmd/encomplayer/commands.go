@@ -153,13 +153,14 @@ func printPaths(w io.Writer, paths config.Paths) {
 	rows := [][2]string{
 		{"config", paths.Config},
 		{"themes", paths.Themes},
+		{"visualizers", paths.Visualizers},
 		{"playlists", paths.Playlists},
 		{"cache", paths.Cache},
 		{"state", paths.State},
 		{"socket", socketPath(paths)},
 	}
 	for _, r := range rows {
-		fmt.Fprintf(w, "%-10s %s\n", r[0], r[1])
+		fmt.Fprintf(w, "%-12s %s\n", r[0], r[1])
 	}
 }
 

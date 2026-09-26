@@ -24,6 +24,14 @@ func Hex(s string) RGB {
 	return RGB{uint8(v >> 16), uint8(v >> 8), uint8(v)}
 }
 
+// Packed unpacks a colour packed as 0xRRGGBB. Higher bits are ignored.
+func Packed[T ~int32 | ~int64 | ~uint32](v T) RGB {
+	return RGB{uint8(v >> 16), uint8(v >> 8), uint8(v)}
+}
+
+// Pack packs c as 0xRRGGBB.
+func (c RGB) Pack() int32 { return int32(c.R)<<16 | int32(c.G)<<8 | int32(c.B) }
+
 // Lerp blends from c towards d; t is clamped to [0, 1].
 func (c RGB) Lerp(d RGB, t float64) RGB {
 	t = clamp01(t)

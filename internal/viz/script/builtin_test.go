@@ -1,4 +1,4 @@
-package builtin
+package script_test
 
 import (
 	"math"
@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/matjam/encomplayer/internal/viz"
+	"github.com/matjam/encomplayer/internal/viz/script"
 )
 
 var testPalette = viz.Palette{
@@ -37,12 +38,24 @@ func music(a *viz.Analyzer, t time.Duration, dt time.Duration) *viz.Frame {
 	return f
 }
 
-// Every registered visualiser must survive any canvas size, fill exactly
+func builtins(t testing.TB) *viz.Catalog {
+	t.Helper()
+	c := viz.NewCatalog()
+	src := script.Builtin()
+	if err := src.Reload(); err != nil {
+		t.Fatal(err)
+	}
+	c.AddSource(src)
+	return c
+}
+
+// Every built-in visualiser must survive any canvas size, fill exactly
 // the canvas, and draw something when music plays.
 func TestEveryVisualizer(t *testing.T) {
-	infos := viz.Builtins.List()
-	if len(infos) < 20 {
-		t.Fatalf("only %d built-in visualizers registered", len(infos))
+	cat := builtins(t)
+	infos := cat.List()
+	if len(infos) < 22 {
+		t.Errorf("only %d built-in visualizers", len(infos))
 	}
 	sizes := [][2]int{{0, 0}, {1, 1}, {3, 2}, {80, 6}, {120, 40}, {40, 12}}
 	for _, info := range infos {
@@ -50,10 +63,11 @@ func TestEveryVisualizer(t *testing.T) {
 			if info.Description == "" {
 				t.Error("no description")
 			}
-			v, _, err := viz.Builtins.New(info.Name)
+			v, _, err := cat.New(info.Name)
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer viz.Close(v)
 			a := viz.NewAnalyzer()
 			c := viz.NewCanvas(0, 0, testPalette)
 			const dt = 33 * time.Millisecond
@@ -85,10 +99,14 @@ func TestEveryVisualizer(t *testing.T) {
 	}
 }
 
-// Silence must not break anything either: no NaNs, no panics.
+// Silence must not break anything either: no NaNs, no errors.
 func TestEveryVisualizerInSilence(t *testing.T) {
-	for _, info := range viz.Builtins.List() {
-		v, _, _ := viz.Builtins.New(info.Name)
+	cat := builtins(t)
+	for _, info := range cat.List() {
+		v, _, err := cat.New(info.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
 		a := viz.NewAnalyzer()
 		c := viz.NewCanvas(60, 16, testPalette)
 		for i := range 10 {
@@ -99,15 +117,21 @@ func TestEveryVisualizerInSilence(t *testing.T) {
 				t.Errorf("%s: %v", info.Name, err)
 			}
 		}
+		viz.Close(v)
 	}
 }
 
 // BenchmarkVisualizers reports each visualiser's cost for one frame on a
 // large full-screen canvas.
 func BenchmarkVisualizers(b *testing.B) {
-	for _, info := range viz.Builtins.List() {
+	cat := builtins(b)
+	for _, info := range cat.List() {
 		b.Run(info.Name, func(b *testing.B) {
-			v, _, _ := viz.Builtins.New(info.Name)
+			v, _, err := cat.New(info.Name)
+			if err != nil {
+				b.Fatal(err)
+			}
+			defer viz.Close(v)
 			a := viz.NewAnalyzer()
 			c := viz.NewCanvas(200, 50, testPalette)
 			frames := make([]*viz.Frame, 30)

@@ -18,6 +18,7 @@ import (
 	"github.com/matjam/encomplayer/internal/playlist"
 	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
+	"github.com/matjam/encomplayer/internal/viz/script"
 )
 
 // fakePlayer records calls. The embedded interface covers methods the tests
@@ -124,9 +125,10 @@ func testDeps(statePath string, startup Startup) Deps {
 			Config: filepath.Join(filepath.Dir(statePath), "config.json"),
 			Themes: filepath.Join(filepath.Dir(statePath), "themes"),
 		},
-		Themes:  theme.NewStore(filepath.Join(filepath.Dir(statePath), "themes")),
-		Startup: startup,
-		Version: "test",
+		Themes:      theme.NewStore(filepath.Join(filepath.Dir(statePath), "themes")),
+		Visualizers: script.Catalog(""),
+		Startup:     startup,
+		Version:     "test",
 	}
 }
 

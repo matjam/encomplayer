@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/viz"
+	"github.com/matjam/encomplayer/internal/viz/script"
 )
 
 func TestVisualizerStripAndSwitching(t *testing.T) {
@@ -149,6 +151,45 @@ func TestEveryVisualizerFitsTheScreen(t *testing.T) {
 	}
 }
 
+// A user's script shows beside the built-ins, and reload restarts it with
+// the edits made since.
+func TestUserVisualizerReload(t *testing.T) {
+	dir := t.TempDir()
+	write := func(desc string) {
+		src := `return { description = "` + desc + `", render = function(f, c) text(0, 0, "` + desc + `", palette.text) end }`
+		if err := os.WriteFile(filepath.Join(dir, "mine.lua"), []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("first")
+	deps := testDeps(filepath.Join(t.TempDir(), "state.json"), Startup{})
+	deps.Visualizers = script.Catalog(dir)
+	deps.Config.Visualizer = "mine"
+	if err := config.Save(deps.Paths.Config, deps.Config); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := startTestModel(deps)
+	if m.viz.info.Name != "mine" || m.viz.info.Description != "first" || m.status.isError {
+		t.Fatalf("showing %+v, status %q", m.viz.info, m.status.text)
+	}
+
+	write("second")
+	m.Update(ReloadMsg{})
+	m.renderViz(time.Now())
+	if m.viz.info.Description != "second" || !strings.Contains(strings.Join(m.viz.lines, ""), "second") {
+		t.Errorf("after reload: %+v, lines %q", m.viz.info, m.viz.lines)
+	}
+
+	// A script broken by an edit falls back to the default, with its error.
+	if err := os.WriteFile(filepath.Join(dir, "mine.lua"), []byte("return {"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(ReloadMsg{})
+	if m.viz.info.Name != viz.Default || !m.status.isError || !strings.Contains(m.status.text, "mine") {
+		t.Errorf("broken script: showing %q, status %q", m.viz.info.Name, m.status.text)
+	}
+}
+
 type failing struct{ panics bool }
 
 func (f failing) Render(*viz.Canvas, *viz.Frame) error {
@@ -161,11 +202,10 @@ func (f failing) Render(*viz.Canvas, *viz.Frame) error {
 func TestBrokenVisualizerFallsBack(t *testing.T) {
 	for _, panics := range []bool{false, true} {
 		m, _ := newTestModel(t)
-		c := viz.NewCatalog()
-		c.Register(viz.Info{Name: viz.Default}, func() viz.Visualizer {
-			v, _, _ := viz.Builtins.New(viz.Default)
-			return v
-		})
+		c := script.Catalog("")
+		if err := c.Reload(); err != nil {
+			t.Fatal(err)
+		}
 		c.Register(viz.Info{Name: "broken"}, func() viz.Visualizer { return failing{panics} })
 		m.viz.catalog = c
 

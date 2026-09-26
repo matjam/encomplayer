@@ -31,7 +31,7 @@ import (
 	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
 	"github.com/matjam/encomplayer/internal/ui"
-	"github.com/matjam/encomplayer/internal/viz"
+	"github.com/matjam/encomplayer/internal/viz/script"
 )
 
 // version is set at build time with -ldflags "-X main.version=v1.2.3".
@@ -86,7 +86,11 @@ func run(args []string) error {
 		printThemes(os.Stdout, tty, theme.NewStore(paths.Themes), current)
 		return nil
 	case opts.listViz:
-		printVisualizers(os.Stdout, tty, viz.Builtins.List(), cfg.Visualizer)
+		visualizers := script.Catalog(paths.Visualizers)
+		if err := visualizers.Reload(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		printVisualizers(os.Stdout, tty, visualizers.List(), cfg.Visualizer)
 		return nil
 	case opts.command != "":
 		return runControl(os.Stdout, socketPath(paths), opts)
@@ -158,6 +162,7 @@ func run(args []string) error {
 		ArtSetting:  artSetting,
 		Formats:     formats,
 		Themes:      theme.NewStore(paths.Themes),
+		Visualizers: script.Catalog(paths.Visualizers),
 		Startup: ui.Startup{
 			Theme:      opts.theme,
 			NoMouse:    opts.noMouse,

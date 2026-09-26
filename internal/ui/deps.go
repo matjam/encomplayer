@@ -12,6 +12,7 @@ import (
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/library"
 	"github.com/matjam/encomplayer/internal/theme"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // Player is the playback engine the UI drives.
@@ -77,6 +78,10 @@ type Deps struct {
 	Formats string
 
 	Themes ThemeStore
+
+	// Visualizers offers the visualisers. New loads it, and reload
+	// reloads it.
+	Visualizers *viz.Catalog
 
 	// Startup holds choices made on the command line for this run only.
 	Startup Startup

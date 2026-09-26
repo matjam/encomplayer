@@ -13,6 +13,7 @@ require (
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/gopxl/beep/v2 v2.1.1
 	github.com/lucasb-eyer/go-colorful v1.4.1
+	github.com/matjam/apogee v1.0.0
 	github.com/mattn/go-runewidth v0.0.27
 	github.com/muesli/cancelreader v0.2.2
 	github.com/rivo/uniseg v0.4.7

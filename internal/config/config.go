@@ -75,6 +75,9 @@ type Paths struct {
 	Cache     string
 	Playlists string
 	Themes    string
+
+	// Visualizers holds the user's visualiser scripts.
+	Visualizers string
 }
 
 // DefaultPaths follows the XDG base directory spec, falling back to
@@ -89,11 +92,12 @@ func DefaultPaths() (Paths, error) {
 	stateDir := envOr("XDG_STATE_HOME", filepath.Join(home, ".local", "state"))
 
 	return Paths{
-		Config:    filepath.Join(configDir, "encomplayer", "config.json"),
-		Playlists: filepath.Join(configDir, "encomplayer", "playlists"),
-		Themes:    filepath.Join(configDir, "encomplayer", "themes"),
-		State:     filepath.Join(stateDir, "encomplayer", "state.json"),
-		Cache:     filepath.Join(cacheDir, "encomplayer", "library.json"),
+		Config:      filepath.Join(configDir, "encomplayer", "config.json"),
+		Playlists:   filepath.Join(configDir, "encomplayer", "playlists"),
+		Themes:      filepath.Join(configDir, "encomplayer", "themes"),
+		Visualizers: filepath.Join(configDir, "encomplayer", "visualizers"),
+		State:       filepath.Join(stateDir, "encomplayer", "state.json"),
+		Cache:       filepath.Join(cacheDir, "encomplayer", "library.json"),
 	}, nil
 }
 
