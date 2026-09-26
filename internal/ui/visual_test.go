@@ -190,6 +190,36 @@ func TestUserVisualizerReload(t *testing.T) {
 	}
 }
 
+// Switching builds the new visualiser once and closes the old one, so a
+// script's setup runs once and no Lua state is left open.
+func TestSwitchBuildsVisualizerOnce(t *testing.T) {
+	m, _ := newTestModel(t)
+	built, closed := 0, 0
+	c := script.Catalog("")
+	if err := c.Reload(); err != nil {
+		t.Fatal(err)
+	}
+	c.Register(viz.Info{Name: "counted"}, func() viz.Visualizer {
+		built++
+		return counted{&closed}
+	})
+	m.viz.catalog = c
+
+	m.runVizCommand("counted")
+	if built != 1 || m.viz.info.Name != "counted" {
+		t.Fatalf("built %d times, showing %q", built, m.viz.info.Name)
+	}
+	m.runVizCommand("spectrum")
+	if closed != 1 {
+		t.Errorf("closed %d times after switching away", closed)
+	}
+}
+
+type counted struct{ closed *int }
+
+func (counted) Render(*viz.Canvas, *viz.Frame) error { return nil }
+func (c counted) Close() error                       { *c.closed++; return nil }
+
 type failing struct{ panics bool }
 
 func (f failing) Render(*viz.Canvas, *viz.Frame) error {

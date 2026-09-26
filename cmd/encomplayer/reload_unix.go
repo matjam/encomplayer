@@ -8,8 +8,8 @@ import (
 	"syscall"
 )
 
-// notifyReload calls reload on every SIGUSR1, so an edited config or theme
-// applies with `pkill -USR1 encomplayer` as well as `encomplayer reload`.
+// notifyReload calls reload on every SIGUSR1, so an edited config, theme or
+// visualizer script applies with `pkill -USR1 encomplayer` as well as `encomplayer reload`.
 // It returns a function that stops listening.
 func notifyReload(reload func()) func() {
 	ch := make(chan os.Signal, 1)
