@@ -9,8 +9,6 @@ import (
 	"github.com/matjam/encomplayer/internal/config"
 	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/viz"
-	// Built-in visualisers register themselves.
-	_ "github.com/matjam/encomplayer/internal/viz/builtin"
 )
 
 const (
@@ -37,8 +35,8 @@ type vizState struct {
 	started, last time.Time
 }
 
-func newVizState(full bool) vizState {
-	return vizState{catalog: viz.Builtins, analyzer: viz.NewAnalyzer(), full: full}
+func newVizState(catalog *viz.Catalog, full bool) vizState {
+	return vizState{catalog: catalog, analyzer: viz.NewAnalyzer(), full: full}
 }
 
 // selectViz switches to the named visualiser without saving the choice.

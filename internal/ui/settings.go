@@ -9,6 +9,7 @@ import (
 	"github.com/matjam/encomplayer/internal/keymap"
 	"github.com/matjam/encomplayer/internal/tea"
 	"github.com/matjam/encomplayer/internal/theme"
+	"github.com/matjam/encomplayer/internal/viz"
 )
 
 // ReloadMsg asks the UI to reread the config file and the active theme. The
@@ -119,6 +120,11 @@ func (m *Model) reload() tea.Cmd {
 	m.status = status{}
 	if err := m.viz.catalog.Reload(); err != nil {
 		m.status.errorf("RELOAD: %v", err)
+	}
+	// Restart the visualiser, so an edited script shows at once.
+	if err := m.selectViz(m.viz.info.Name); err != nil {
+		m.status.errorf("RELOAD: %v", err)
+		_ = m.selectViz(viz.Default)
 	}
 	cmd := m.applyConfig(cfg)
 	if !m.status.isError {

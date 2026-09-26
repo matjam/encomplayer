@@ -18,6 +18,34 @@ func plain(c *Canvas) []string {
 	return lines
 }
 
+// A pixel buffer goes beneath what was drawn directly: glyphs, dots and
+// pixels already set all win, and negative entries stay empty.
+func TestUnderlay(t *testing.T) {
+	c := NewCanvas(3, 1, testPalette)
+	c.Set(0, 0, 'x', testPalette.Text)
+	c.Pixel(1, 0, testPalette.Accent)
+	px := []int32{
+		testPalette.Bright.Pack(), testPalette.Bright.Pack(), -1, // top row of pixels
+		testPalette.Bright.Pack(), testPalette.Bright.Pack(), -1, // bottom row
+	}
+	c.Underlay(px)
+
+	if got := plain(c)[0]; got != "x▀ " {
+		t.Fatalf("row = %q, want %q", got, "x▀ ")
+	}
+	if cl := c.cells[1]; cl.fg != testPalette.Accent || cl.bg != testPalette.Bright || !cl.lower {
+		t.Errorf("cell 1 = %+v: the drawn top pixel should keep its colour over the buffer's bottom one", cl)
+	}
+	c.Underlay(px[:2]) // a short buffer draws what it has
+}
+
+func TestPack(t *testing.T) {
+	c := RGB{0x12, 0x34, 0x56}
+	if c.Pack() != 0x123456 || Packed(c.Pack()) != c || Packed(int64(0x7f123456)) != c {
+		t.Errorf("Pack/Packed round trip failed: %#x", c.Pack())
+	}
+}
+
 func TestCanvasLayers(t *testing.T) {
 	c := NewCanvas(4, 2, testPalette)
 	c.Text(0, 0, "hi", testPalette.Text)

@@ -94,7 +94,7 @@ func New(ctx context.Context, deps Deps) *Model {
 		queueList: collection.NewList[domain.Track](nil),
 		modes:     deps.State.Modes,
 		resolver:  keymap.NewResolver(deps.Keymap),
-		viz:       newVizState(deps.State.VisualizerFull),
+		viz:       newVizState(deps.Visualizers, deps.State.VisualizerFull),
 		sizes:     deps.State.Layout,
 	}
 	if m.sizes == (config.Layout{}) {
@@ -106,6 +106,9 @@ func New(ctx context.Context, deps Deps) *Model {
 	}
 	m.pendingShuffle = deps.Startup.Shuffle
 	if err := m.applyTheme(startTheme); err != nil {
+		m.status.errorf("%v", err)
+	}
+	if err := deps.Visualizers.Reload(); err != nil {
 		m.status.errorf("%v", err)
 	}
 	if err := m.selectViz(deps.Config.Visualizer); err != nil {

@@ -115,6 +115,36 @@ func (c *Canvas) Pixel(px, py int, col RGB) {
 	}
 }
 
+// Underlay draws a buffer of half-block pixels, PixelW × PixelH in rows,
+// beneath whatever the canvas already holds. Each entry is a colour packed
+// as 0xRRGGBB; a negative entry leaves its pixel empty. A cell that already
+// shows a glyph or braille dots keeps it, and a pixel already drawn keeps
+// its colour.
+func (c *Canvas) Underlay(px []int32) {
+	w := c.PixelW()
+	for i, v := range px[:min(len(px), w*c.PixelH())] {
+		if v < 0 {
+			continue
+		}
+		cl := &c.cells[i/w/2*c.W+i%w]
+		switch cl.layer {
+		case layerEmpty:
+			*cl = cell{layer: layerPixel}
+		case layerPixel:
+		default:
+			continue
+		}
+		col := Packed(v)
+		if i/w%2 == 0 {
+			if !cl.top {
+				cl.fg, cl.top = col, true
+			}
+		} else if !cl.lower {
+			cl.bg, cl.lower = col, true
+		}
+	}
+}
+
 // DotW and DotH are the braille dot resolution.
 func (c *Canvas) DotW() int { return c.W * 2 }
 func (c *Canvas) DotH() int { return c.H * 4 }

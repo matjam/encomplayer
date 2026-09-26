@@ -2,16 +2,11 @@
 // receives per frame, the canvas it draws on, and the catalog that collects
 // them.
 //
-// A visualiser is anything implementing Visualizer. The built-in ones live
-// in package builtin, one file each, and register themselves from init:
-//
-//	func init() {
-//		viz.Register(viz.Info{Name: "scope", Description: "..."}, func() viz.Visualizer { return &scope{} })
-//	}
-//
-// Visualisers found at run time, such as script files, plug in through a
-// Source instead. The catalog lists them beside the built-ins, and a source's
-// visualiser replaces a built-in of the same name.
+// A visualiser is anything implementing Visualizer. EncomPlayer's own are
+// Lua scripts, which package script supplies through a Source; a Go
+// visualiser registers with Catalog.Register. The catalog lists them
+// together, and a source's visualiser replaces a registered one of the
+// same name.
 package viz
 
 import (
@@ -94,12 +89,6 @@ type builtin struct {
 func NewCatalog() *Catalog {
 	return &Catalog{builtins: registry.New[builtin]()}
 }
-
-// Builtins is the catalog that Register fills.
-var Builtins = NewCatalog()
-
-// Register adds a built-in visualiser to Builtins. Call it from init.
-func Register(info Info, f Factory) { Builtins.Register(info, f) }
 
 // Register adds a visualiser. It panics on a missing name or factory,
 // because that is a programming error found at startup.

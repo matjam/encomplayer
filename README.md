@@ -20,7 +20,8 @@ rmpc's keybindings. No MPD required.
   pick up files added while it runs.
 - 22 visualizers in the SIGNAL strip or full screen, from Winamp-style
   peaks and a phosphor vectorscope to demoscene plasma, Doom fire, MilkDrop
-  feedback trails and light cycles racing the Grid.
+  feedback trails and light cycles racing the Grid. Each is a Lua script,
+  and you can add your own.
 - Control a running player from the shell, e.g. from a window manager
   keybinding or a status bar.
 - 34 built-in themes, custom themes, and a config screen that applies changes
@@ -340,42 +341,102 @@ the music before the volume control, so they stay lively at low volume.
 
 ### Writing a visualizer
 
-A visualizer is one Go file in `internal/viz/builtin`. It registers itself
-from `init`, so dropping in the file is all it takes:
+Every visualizer is a Lua script, run by
+[apogee](https://github.com/matjam/apogee), a Lua 5.5 VM with a JIT
+compiler. Put `pulse.lua` in `~/.config/encomplayer/visualizers/` and it
+appears as `pulse`; a file named after a built-in replaces it. The
+built-ins in
+[`internal/viz/script/builtin`](internal/viz/script/builtin) are working
+examples to copy from.
 
-```go
-package builtin
+```lua
+-- pulse.lua: a ring that swells with the bass and flashes on the beat.
+local sin, cos, pi = math.sin, math.cos, math.pi
+local flash = 0
 
-import "github.com/matjam/encomplayer/internal/viz"
+return {
+  description = "A ring that swells with the bass",
 
-func init() {
-	viz.Register(viz.Info{Name: "pulse", Description: "A dot that swells with the bass"},
-		func() viz.Visualizer { return &pulse{} })
-}
-
-type pulse struct{}
-
-func (*pulse) Render(c *viz.Canvas, f *viz.Frame) error {
-	r := float64(min(c.DotW(), c.DotH())) / 2 * f.Bass
-	c.Line(float64(c.DotW())/2-r, float64(c.DotH())/2, float64(c.DotW())/2+r, float64(c.DotH())/2, c.Palette.Accent)
-	return nil
+  render = function(f, c)
+    flash = math.max(f.beat_strength, flash * fade(step(f), 0.2))
+    local r = math.min(c.dw, c.dh) / 2 * (0.3 + 0.6 * f.bass)
+    local col = lerp(palette.text, palette.accent, flash)
+    for i = 0, 179 do
+      local a = 2 * pi * i / 180
+      dot(c.dw / 2 + cos(a) * r, c.dh / 2 + sin(a) * r, col)
+    end
+  end,
 }
 ```
 
-- `viz.Frame` carries both channels' latest 2,048 samples, the FFT
-  spectrum and `Bands(n)`, levels, bass, mid and treble energy, beat
-  detection, and the playing track.
-- `viz.Canvas` draws in three resolutions: cells with any glyph,
-  half-block pixels (two per cell) and braille dots (2×4 per cell).
-  `c.Palette` holds the theme's colours and ramps.
-- The factory runs each time the visualizer is selected, so it may keep
-  state between frames.
-- The tests in `internal/viz/builtin` run every registered visualizer at
-  several sizes, in music and in silence, and `go test -bench .` there
-  reports each one's cost per frame.
+The script runs once when the visualizer is selected, so its locals keep
+state between frames, and `render(f, c)` runs every frame. Save the file
+and run `encomplayer reload` (or `:reload`) to restart it with your
+changes. A script that fails shows its error in the status line and the
+player switches to `spectrum`.
 
-Visualizers loaded at run time, such as scripts, can plug in as a
-`viz.Source` without changing the player.
+**Frame** `f`, the audio just before this frame:
+
+| Field | |
+|---|---|
+| `time`, `dt` | Seconds since the visualizer started, and since the last frame. `step(f)` is `dt` capped at 0.25 s. |
+| `playing`, `rate` | Whether music plays, and the sample rate |
+| `left`, `right` | The latest 2,048 samples of each channel, in [-1, 1], before the volume control |
+| `spectrum`, `bin_hz` | 1,024 FFT bins of the mono mix, 0 to 1 over 60 dB; bin `i` is `i × bin_hz` |
+| `level`, `level_left`, `level_right`, `peak` | Loudness, 0 to 1 over 48 dB, and the largest sample |
+| `bass`, `mid`, `treble` | Mean spectrum over 40–250 Hz, 250 Hz–4 kHz and 4–16 kHz |
+| `beat`, `beat_strength` | True on a detected kick or bass onset, and how far it stood out (0 to 1) |
+| `title`, `artist`, `album`, `position`, `duration` | The playing track; times in seconds |
+
+`bands(n)` groups the spectrum into `n` bands, spaced as the ear hears
+pitch from 40 Hz to 16 kHz.
+
+**Canvas** `c` has three resolutions: `w` × `h` cells, `pw` × `ph`
+half-block pixels (two per cell) and `dw` × `dh` braille dots (2×4 per
+cell). A cell shows whatever drew into it last.
+
+| Function | Draws |
+|---|---|
+| `set(x, y, codepoint, fg)` | A glyph in a cell |
+| `cell(x, y, glyph, fg[, bg])` | A glyph, as a string or code point, with an optional background |
+| `text(x, y, s, fg)` | Single-width text from a cell rightwards |
+| `pixel(x, y, col)` | A half-block pixel |
+| `dot(x, y, col)`, `line(x0, y0, x1, y1, col)` | Braille dots, and lines between them |
+| `c.pixels[y * c.pw + x] = col` | A pixel in the pixel buffer, which lies beneath everything else drawn this frame and is cleared before each one |
+
+Coordinates round down, and anything off the canvas is dropped.
+
+**Colours** are numbers, `0xRRGGBB`; a negative one draws nothing.
+`palette` holds the theme's `background`, `text`, `bright`, `dim`, `grid`,
+`accent` and `error`. `rgb(r, g, b)`, `hex("#rrggbb")`, `lerp(a, b, t)` and
+`scale(col, f)` make and mix them, and `ramp(t)`, `heat(t)` and `cycle(t)`
+run through the theme: faint to hot, background to fire, and around a loop.
+
+**Buffers** are arrays of numbers shared with the player, indexed from 0,
+with `#buf` their length: `f.left`, `f.right`, `f.spectrum`, `bands(n)`
+and `c.pixels`, and your own from `f64(n)` (floats) and `i32(n)`
+(integers). The JIT reads and writes them inline, so per-pixel effects
+belong in buffers rather than tables.
+
+**Helpers:** `clamp(v, lo, hi)`, `fade(dt, half_life)`, `tilt(v, t,
+boost)`, `gain()` (a peak follower for auto-scaling a trace) and
+`EIGHTHS[0..8]`, the block glyphs that fill a cell from the bottom.
+
+Scripts get Lua's `string`, `math`, `table` and `utf8` libraries, but no
+files, processes or `require`. Each frame has 250 ms and 64 MB, after
+which the script stops with an error. Keep a 200×50 frame, which is 20,000
+pixels, well under 2 ms: `go test -bench . ./internal/viz/script` reports
+each built-in's cost. In apogee 1.0, per pixel:
+
+- copy upvalues into locals before a hot loop, as buffers read through
+  upvalues keep it from compiling tightly;
+- prefer `x // 1` and `if` clamps to `math.floor`, `math.min` and
+  `math.max`, which call Go (about 15–25 ns each);
+- avoid `%` of floats, which calls Go, and `math.random`; the built-in
+  `fire` shows an inline generator.
+
+On Windows, and other platforms apogee does not compile for, scripts are
+interpreted, about twice as slow.
 
 ## Themes
 
@@ -415,6 +476,7 @@ file with a built-in's name replaces that built-in.
 |---|---|
 | Config | `~/.config/encomplayer/config.json` |
 | Custom themes | `~/.config/encomplayer/themes/` |
+| Your visualizers | `~/.config/encomplayer/visualizers/` |
 | Playlists | `~/.config/encomplayer/playlists/` |
 | Library cache | `~/.cache/encomplayer/` |
 | Queue, position and layout | `~/.local/state/encomplayer/` |
@@ -442,8 +504,9 @@ file retagged in place when its folder did not change.
 - **Tags:** implement `library.TagReader` and add it to the `Tagger` chain.
 - **Image protocols:** implement `art.Renderer` and register it by name, and
   teach `art.Detect` when to choose it.
-- **Visualizers:** add a file to `internal/viz/builtin` that calls
-  `viz.Register` from `init`; see [Writing a visualizer](#writing-a-visualizer).
+- **Visualizers:** write a Lua script; see
+  [Writing a visualizer](#writing-a-visualizer). A built-in one is a
+  script in `internal/viz/script/builtin`.
 - **Keys:** every action can be rebound in the config.
 
 ## Building
