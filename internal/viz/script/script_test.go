@@ -126,7 +126,9 @@ func TestLimits(t *testing.T) {
 		wantText     string
 	}{
 		{"runaway", `while true do end`, nil, "interrupted"},
-		{"greedy", `local t = {} for i = 1, 1e9 do t[i] = ("x"):rep(1024) .. i end`, lua.ErrMemory, ""},
+		// One allocation past the limit, so the time limit cannot win the
+		// race on a slow machine.
+		{"greedy", `local s = ("x"):rep(128 << 20)`, lua.ErrMemory, ""},
 		{"huge buffer", `f64(1e9)`, nil, "buffer size out of range"},
 		{"error", `error("out of cheese")`, nil, "err.lua:1: out of cheese"},
 	}
