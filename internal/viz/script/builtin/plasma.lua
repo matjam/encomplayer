@@ -2,7 +2,7 @@
 -- column, the row, or their sum, so they are computed once per line rather
 -- than once per pixel.
 
-local max, min, sqrt, sin = math.max, math.min, math.sqrt, math.sin
+local max, min, floor, sqrt, sin = math.max, math.min, math.floor, math.sqrt, math.sin
 local SHADES = 256
 
 local width, height = 0, 0
@@ -47,17 +47,15 @@ return {
       shades[i] = scale(cycle(v / 8 + t * 0.03), brightness)
     end
 
-    -- Locals, not upvalues, so apogee compiles the loop tightly
-    -- (matjam/apogee#121).
-    local cols, rows, diag, dist, shades, pixels = cols, rows, diag, dist, shades, c.pixels
-    local t2 = t * 2
+    local pixels = c.pixels
     for y = 0, h - 1 do
       local row, base = rows[y], y * w
       for x = 0, w - 1 do
-        local d = dist[base + x] * 1.4 - t2
-        local v = cols[x] + row + diag[x + y] + sin(d)
-        local k = ((v + 4) * 31.875) // 1
-        if k < 0 then k = 0 elseif k > 255 then k = 255 end
+        local v = cols[x] + row + diag[x + y] + sin(dist[base + x] * 1.4 - t * 2)
+        -- An if clamp: min and max of floor's result run slowly in apogee
+        -- 1.1 (matjam/apogee#140).
+        local k = floor((v + 4) / 8 * (SHADES - 1))
+        if k < 0 then k = 0 elseif k > SHADES - 1 then k = SHADES - 1 end
         pixels[base + x] = shades[k]
       end
     end

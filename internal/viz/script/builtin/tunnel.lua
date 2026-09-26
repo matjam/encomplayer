@@ -1,7 +1,8 @@
 -- Flying down a chequered tunnel. Each pixel's angle and depth are
 -- computed once per canvas size.
 
-local max, sqrt, atan, pi = math.max, math.sqrt, math.atan, math.pi
+local max, min, floor = math.max, math.min, math.floor
+local sqrt, atan, pi = math.sqrt, math.atan, math.pi
 local SHADES = 256
 
 local width, height = 0, 0
@@ -47,19 +48,13 @@ return {
       end
     end
 
-    local angle, depth, shades, pixels = angle, depth, shades, c.pixels
-    local tr, tu = travel, turn
+    local pixels = c.pixels
     for i = 0, w * h - 1 do
       local d = depth[i]
-      local u = (angle[i] + tu) // 1
-      local v = ((d + tr) * 4) // 1
+      local check = (floor(angle[i] + turn) + floor((d + travel) * 4)) % 2
       -- Pixels near the centre are far away, so they fade into the dark.
-      local shade = 1.6 / d
-      if shade > 1.0 then shade = 1.0 end
-      -- Parity by //: apogee 1.0 computes % of floats in Go
-      -- (matjam/apogee#130).
-      local s = u + v
-      pixels[i] = shades[(s - (s // 2) * 2) * SHADES + (shade * 255) // 1]
+      local shade = min(1.6 / d, 1.0)
+      pixels[i] = shades[check * SHADES + floor(shade * 255)]
     end
   end,
 }

@@ -1,6 +1,6 @@
 -- Spectrum analyser: 64 bands spread across the strip, whatever its width.
 
-local max = math.max
+local max, min, floor = math.max, math.min, math.floor
 
 local BANDS = 64
 local levels = f64(BANDS)
@@ -18,8 +18,6 @@ return {
 
     local w, h = c.w, c.h
     local steps = h * 8
-    -- Hot loops avoid math.floor, min and max, which apogee 1.0 calls in Go
-    -- (matjam/apogee#120, #122).
     for y = 0, h - 1 do
       local from_bottom = h - 1 - y
       local height = (from_bottom + 1) / h
@@ -31,11 +29,8 @@ return {
       end
       local base = from_bottom * 8
       for x = 0, w - 1 do
-        local lit = (levels[x * BANDS // w] * steps + 0.5) // 1 - base
-        if lit > 0 then
-          if lit > 8 then lit = 8 end
-          set(x, y, EIGHTHS[lit], col)
-        end
+        local lit = floor(levels[x * BANDS // w] * steps + 0.5) - base
+        if lit > 0 then set(x, y, EIGHTHS[min(lit, 8)], col) end
       end
     end
   end,

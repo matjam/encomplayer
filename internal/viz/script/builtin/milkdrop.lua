@@ -31,7 +31,7 @@ end
 local function ring(cx, cy, r, col)
   for i = 0, 179 do
     local a = 2 * pi * i / 180
-    plot((cx + cos(a) * r) // 1, (cy + sin(a) * r) // 1, col, 1)
+    plot(floor(cx + cos(a) * r), floor(cy + sin(a) * r), col, 1)
   end
 end
 
@@ -39,30 +39,20 @@ end
 -- to the centre, rotated by swirl, so the picture flows outwards.
 -- Brightness blends the four nearest pixels, so repeated warping stays
 -- smooth instead of blocky.
---
--- Sample points are fixed point, in 1/65536ths of a pixel, so the pixel
--- and the index are integers: buffers read faster at integer keys, and
--- math.floor would call Go (matjam/apogee#120, #129). A negative point shifts to a huge one, which
--- the bounds check turns away like any other outside the frame.
-local ONE = 65536
-local FRACTION = 1 / ONE
-
 local function warp(w, h, zoom, keep, swirl)
-  local lum0, hue0, lum1, hue1 = lum0, hue0, lum1, hue1
   local sn, cs = sin(swirl) * zoom, cos(swirl) * zoom
-  local dx, dy = floor(cs * ONE), floor(sn * ONE)
   local cx, cy = w / 2, h / 2
   local wm, hm = w - 1, h - 1
   for py = 0, hm do
     local y = py - cy
     -- The sample point moves by (cs, sn) per pixel along the row.
-    local sx = floor((cx - cx * cs - y * sn) * ONE)
-    local sy = floor((cy - cx * sn + y * cs) * ONE)
+    local sx = cx - cx * cs - y * sn
+    local sy = cy - cx * sn + y * cs
     local i = py * w
     for _ = 0, wm do
-      local x0, y0 = sx >> 16, sy >> 16
-      if x0 < wm and y0 < hm then
-        local fx, fy = (sx & 65535) * FRACTION, (sy & 65535) * FRACTION
+      local x0, y0 = floor(sx), floor(sy)
+      if x0 >= 0 and y0 >= 0 and x0 < wm and y0 < hm then
+        local fx, fy = sx - x0, sy - y0
         local a = y0 * w + x0
         local c = a + w
         local top = lum0[a] + (lum0[a + 1] - lum0[a]) * fx
@@ -74,7 +64,7 @@ local function warp(w, h, zoom, keep, swirl)
       else
         lum1[i] = 0.0
       end
-      sx, sy, i = sx + dx, sy + dy, i + 1
+      sx, sy, i = sx + cs, sy + sn, i + 1
     end
   end
 end
@@ -102,26 +92,28 @@ return {
     local px, py
     for x = 0, w - 1 do
       local k = x * n // w
-      local y = (cy - (left[k] + right[k]) / 2 * g * cy) // 1
+      local y = floor(cy - (left[k] + right[k]) / 2 * g * cy)
       if px then stroke(px, py, x, y, col, bright) end
       px, py = x, y
     end
     if f.beat then ring(w / 2, cy, min(w / 2, cy) * 0.6, palette.bright) end
 
     -- Trails fade into the theme's background rather than to black.
-    -- Brightness never passes 1, so channels need no upper clamp.
+    -- Brightness never passes 1, so channels need no upper clamp. The
+    -- lower one is an if, not max: apogee 1.1 runs floor(max(...)) slowly
+    -- (matjam/apogee#140).
     local bg = palette.background
     local br, bgg, bb = bg >> 16 & 255, bg >> 8 & 255, bg & 255
-    local lum, hue, pixels = lum0, hue0, c.pixels
+    local pixels = c.pixels
     for i = 0, w * h - 1 do
-      local v = lum[i]
+      local v = lum0[i]
       if v > 0.02 then
-        local col = hue[i]
+        local col = hue0[i]
         local r, gr, b = (col >> 16 & 255) * v, (col >> 8 & 255) * v, (col & 255) * v
         if r < br then r = br end
         if gr < bgg then gr = bgg end
         if b < bb then b = bb end
-        pixels[i] = (r // 1) * 65536 + (gr // 1) * 256 + b // 1
+        pixels[i] = floor(r) * 65536 + floor(gr) * 256 + floor(b)
       end
     end
   end,
