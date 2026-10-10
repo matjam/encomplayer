@@ -55,6 +55,10 @@ type Model struct {
 	playGen   uint64
 	restored  bool
 
+	// queueTouched is when the user last worked in the queue list. Until
+	// it is queueFollowIdle old, the cursor stays off the playing track.
+	queueTouched time.Time
+
 	// resumeAt is where the current track stopped in the last session.
 	// Resuming from a stop starts there; playing any track clears it.
 	resumeAt  time.Duration
@@ -156,7 +160,11 @@ type keyTimeoutMsg uint64
 // Update implements tea.Model.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	before := m.artSignature()
+	current := m.queue.CurrentIndex()
 	cmd := m.update(msg)
+	if m.queue.CurrentIndex() != current {
+		m.followCurrent()
+	}
 	if m.artSignature() != before {
 		cmd = tea.Batch(cmd, m.scheduleArtPlacement())
 	}

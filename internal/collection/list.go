@@ -48,6 +48,20 @@ func (l *List[T]) SetCursor(i int) {
 	l.scroll()
 }
 
+// Reveal moves the cursor to i and scrolls so that, where the list allows,
+// at least margin rows stay visible above and below it.
+func (l *List[T]) Reveal(i, margin int) {
+	l.SetCursor(i)
+	margin = max(0, min(margin, (l.height-1)/2))
+	if l.cursor > l.offset+l.height-1-margin {
+		l.offset = l.cursor - (l.height - 1 - margin)
+	}
+	if l.cursor < l.offset+margin {
+		l.offset = l.cursor - margin
+	}
+	l.offset = max(0, min(l.offset, len(l.items)-l.height))
+}
+
 // Move shifts the cursor by delta items.
 func (l *List[T]) Move(delta int) { l.SetCursor(l.cursor + delta) }
 
