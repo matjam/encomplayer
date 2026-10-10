@@ -52,6 +52,38 @@ func TestListNavigation(t *testing.T) {
 	}
 }
 
+func TestListReveal(t *testing.T) {
+	tests := []struct {
+		name      string
+		start     int // cursor before Reveal
+		reveal    int
+		margin    int
+		wantFirst int
+	}{
+		{name: "below view keeps margin under it", start: 0, reveal: 6, margin: 1, wantFirst: 3},
+		{name: "above view keeps margin over it", start: 9, reveal: 3, margin: 1, wantFirst: 2},
+		{name: "inside margin scrolls one row", start: 0, reveal: 4, margin: 1, wantFirst: 1},
+		{name: "already clear does not scroll", start: 0, reveal: 3, margin: 1, wantFirst: 0},
+		{name: "clamps at the end", start: 0, reveal: 9, margin: 2, wantFirst: 5},
+		{name: "clamps at the start", start: 9, reveal: 0, margin: 2, wantFirst: 0},
+		{name: "oversized margin centres", start: 0, reveal: 5, margin: 10, wantFirst: 3},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l := NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+			l.SetHeight(5)
+			l.SetCursor(tc.start)
+			l.Reveal(tc.reveal, tc.margin)
+			if l.Cursor() != tc.reveal {
+				t.Errorf("cursor = %d, want %d", l.Cursor(), tc.reveal)
+			}
+			if first, _ := l.IndexAtRow(0); first != tc.wantFirst {
+				t.Errorf("first visible = %d, want %d", first, tc.wantFirst)
+			}
+		})
+	}
+}
+
 func TestListIndexAtRow(t *testing.T) {
 	l := NewList([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	l.SetHeight(3)

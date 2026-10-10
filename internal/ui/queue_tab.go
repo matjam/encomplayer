@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/matjam/encomplayer/internal/collection"
 	"github.com/matjam/encomplayer/internal/domain"
@@ -42,15 +43,47 @@ func (q *queueTab) click(m *Model, x, y int, double bool) tea.Cmd {
 	if artW, _ := queueSplit(m, m.width); x < artW {
 		return nil
 	}
+	m.touchQueue()
 	if listClick(m.queueList, y-queueFirstRow) && double {
 		return m.playIndex(m.queueList.Cursor())
 	}
 	return nil
 }
 
-func (q *queueTab) scroll(m *Model, delta int) { m.queueList.Move(delta) }
+func (q *queueTab) scroll(m *Model, delta int) {
+	m.touchQueue()
+	m.queueList.Move(delta)
+}
 
+// queueFollowIdle is how long the queue list must go untouched before its
+// cursor follows the playing track.
+const queueFollowIdle = 10 * time.Second
+
+func (m *Model) touchQueue() { m.queueTouched = time.Now() }
+
+// followCurrent moves the queue cursor onto the playing track, keeping a
+// quarter of the view for the tracks after it, unless the user has worked
+// in the queue recently.
+func (m *Model) followCurrent() {
+	if time.Since(m.queueTouched) < queueFollowIdle {
+		return
+	}
+	if _, i, ok := m.queue.Current(); ok {
+		m.queueList.Reveal(i, m.queueList.Height()/4)
+	}
+}
+
+// handle runs a queue action. Only actions the queue handles itself count
+// as working in it, so next-track and the like still let the cursor follow.
 func (q *queueTab) handle(m *Model, a keymap.Action) (bool, tea.Cmd) {
+	handled, cmd := q.act(m, a)
+	if handled {
+		m.touchQueue()
+	}
+	return handled, cmd
+}
+
+func (q *queueTab) act(m *Model, a keymap.Action) (bool, tea.Cmd) {
 	l := m.queueList
 	if navigate(l, a) {
 		return true, nil
