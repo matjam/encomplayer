@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/matjam/encomplayer/compare/v1.7.1...v1.8.0) (2026-10-10)
+
+
+### Features
+
+* keep the playing track in view in the queue ([#27](https://github.com/matjam/encomplayer/issues/27)) ([fcc07d3](https://github.com/matjam/encomplayer/commit/fcc07d3d8b77b2b4019bb5c3315713796f60d5a8))
+
 ## [1.7.1](https://github.com/matjam/encomplayer/compare/v1.7.0...v1.7.1) (2026-09-26)
 
 
