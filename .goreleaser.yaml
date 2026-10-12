@@ -86,12 +86,17 @@ homebrew_casks:
         brew install ffmpeg
     # The binary is not notarized with Apple, so Gatekeeper would refuse to
     # launch it. Clear the quarantine flag Homebrew sets on download.
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/encomplayer"]
-          end
+    #
+    # Homebrew 7 deprecates `postflight` blocks for the declarative
+    # `postflight_steps`, which GoReleaser's hooks cannot emit yet, so the
+    # block is written here. GoReleaser templates the whole cask, so the
+    # Homebrew token {{staged_path}} is escaped as a Go template string.
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/encomplayer"]
+        end
+      end
 
 release:
   mode: keep-existing
